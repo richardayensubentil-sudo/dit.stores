@@ -1279,15 +1279,29 @@
 
       async function getUsers() {
         try {
-          // Use getItemAsync so it auto-retries if the initial page load failed
-          const raw = await memoryStore.getItemAsync(STORAGE_KEY);
+          // Fetch directly from /api/storage — most reliable path
+          const resp = await fetch("/api/storage");
+          if (!resp.ok) throw new Error("Storage API returned HTTP " + resp.status);
+          const data = await resp.json();
+          const raw = data[STORAGE_KEY];
+
           if (!raw) {
-            await memoryStore.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
+            // DB is empty — seed the default admin in the background, return immediately
+            fetch("/api/storage/" + encodeURIComponent(STORAGE_KEY), {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ value: JSON.stringify(DEFAULT_USERS) })
+            }).catch(function(e) { console.warn("Seed failed:", e); });
             return JSON.parse(JSON.stringify(DEFAULT_USERS));
           }
+
           const parsed = JSON.parse(raw);
           if (!isValidUserShape(parsed)) {
-            await memoryStore.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
+            fetch("/api/storage/" + encodeURIComponent(STORAGE_KEY), {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ value: JSON.stringify(DEFAULT_USERS) })
+            }).catch(function(e) { console.warn("Seed failed:", e); });
             return JSON.parse(JSON.stringify(DEFAULT_USERS));
           }
           return parsed;
@@ -1299,11 +1313,16 @@
 
       async function saveUsers(users) {
         try {
-          memoryStore.setItem(STORAGE_KEY, JSON.stringify(users));
+          const resp = await fetch("/api/storage/" + encodeURIComponent(STORAGE_KEY), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ value: JSON.stringify(users) })
+          });
+          if (!resp.ok) throw new Error("Save returned HTTP " + resp.status);
           return users;
         } catch (err) {
           console.error("Failed to save users:", err);
-          alert("Could not save changes. Your browser storage may be full or disabled.");
+          alert("Could not save changes. Please try again.");
           throw err;
         }
       }
