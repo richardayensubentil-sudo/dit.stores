@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DIT STORES - Inventory System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        /* Dark Theme (Default) */
+        --bg-main: #09090b;
+        --bg-surface: rgba(24, 24, 27, 0.6);
+        --bg-card: #18181b;
+        --bg-surface-2: rgba(255, 255, 255, 0.03);
+        --bg-surface-3: rgba(255, 255, 255, 0.05);
+        --border: rgba(255, 255, 255, 0.08);
+        --border-hover: rgba(255, 255, 255, 0.15);
+        --text-main: #fafafa;
+        --text-muted: #a1a1aa;
+        --accent: #818cf8; /* Indigo 400 */
+        --accent-hover: #a5b4fc;
+        --accent-light: rgba(129, 140, 248, 0.1);
+        --accent-glow: rgba(129, 140, 248, 0.3);
+        --success: #4ade80;
+        --success-light: rgba(74, 222, 128, 0.05);
+        --success-border: rgba(74, 222, 128, 0.2);
+        --warning: #facc15;
+        --warning-light: rgba(250, 204, 21, 0.1);
+        --danger: #f87171;
+        --danger-light: rgba(248, 113, 113, 0.1);
+        --danger-border: rgba(248, 113, 113, 0.3);
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+        --input-bg: rgba(0, 0, 0, 0.2);
+        --input-bg-focus: rgba(0, 0, 0, 0.4);
+        --body-bg: radial-gradient(circle at 0% 0%, #1e1b4b 0%, var(--bg-main) 50%);
+        --particle-color: rgba(255, 255, 255, 0.4);
+        --line-color: 129, 140, 248;
+      }
+
+      [data-theme="light"] {
+        /* Light Theme (Crystal Glass) */
+        --bg-main: #f8fafc;
+        --bg-surface: rgba(255, 255, 255, 0.6);
+        --bg-card: #ffffff;
+        --bg-surface-2: #f8fafc;
+        --bg-surface-3: #f1f5f9;
+        --border: rgba(15, 23, 42, 0.08);
+        --border-hover: rgba(15, 23, 42, 0.15);
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --accent: #4f46e5; /* Indigo 600 */
+        --accent-hover: #4338ca;
+        --accent-light: rgba(79, 70, 229, 0.08);
+        --accent-glow: rgba(79, 70, 229, 0.2);
+        --success: #16a34a;
+        --success-light: rgba(22, 163, 74, 0.05);
+        --success-border: rgba(22, 163, 74, 0.2);
+        --warning: #d97706;
+        --warning-light: rgba(217, 119, 6, 0.1);
+        --danger: #dc2626;
+        --danger-light: rgba(220, 38, 38, 0.05);
+        --danger-border: rgba(220, 38, 38, 0.2);
+        --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+        --input-bg: #f8fafc;
+        --input-bg-focus: #ffffff;
+        --body-bg: radial-gradient(circle at 0% 0%, #e0e7ff 0%, var(--bg-main) 50%);
+        --particle-color: rgba(15, 23, 42, 0.3);
+        --line-color: 79, 70, 229;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Outfit", system-ui, sans-serif;
+        background: var(--body-bg);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow-x: hidden;
+        transition: background 0.4s ease, color 0.4s ease;
+      }
+
+      #bgCanvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .ambient-light {
+        position: fixed;
+        width: 800px;
+        height: 800px;
+        background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+        border-radius: 50%;
+        top: -300px;
+        right: -300px;
+        z-index: 0;
+        opacity: 0.4;
+        filter: blur(80px);
+        pointer-events: none;
+      }
+
+      .theme-btn, .admin-btn {
+        position: absolute;
+        top: 20px;
+        z-index: 10;
+        padding: 10px 20px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        backdrop-filter: blur(12px);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-sm);
+      }
+      .theme-btn { left: 20px; }
+      .admin-btn { right: 20px; }
+
+      .reports-btn { right: 160px; }
+
+      .theme-btn:hover, .admin-btn:hover, .reports-btn:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px var(--accent-glow);
+      }
+
+      .container {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        padding: 50px 60px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(16px);
+        max-width: 90%;
+        width: 480px;
+        animation: slideUp 1s cubic-bezier(0.16, 1, 0.3, 1);
+        margin: 40px 0;
+      }
+
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(40px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      h1 {
+        font-size: 3.2rem;
+        font-weight: 700;
+        letter-spacing: -1.5px;
+        margin-bottom: 10px;
+        background: linear-gradient(135deg, var(--text-main), var(--accent));
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      p {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        margin-bottom: 35px;
+        font-weight: 500;
+      }
+
+      .enter-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 16px 36px;
+        background: var(--accent);
+        color: #ffffff;
+        text-decoration: none;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px var(--accent-glow);
+        font-family: inherit;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .enter-btn:hover {
+        transform: translateY(-3px);
+        background: var(--accent-hover);
+        box-shadow: 0 8px 25px var(--accent-glow);
+      }
+
+      .enter-btn svg { transition: transform 0.3s ease; }
+      .enter-btn:hover svg { transform: translateX(4px); }
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        padding: 20px;
+      }
+      [data-theme="light"] .modal-overlay { background: rgba(15, 23, 42, 0.3); }
+
+      .modal-overlay.active { opacity: 1; visibility: visible; }
+
+      .modal-content {
+        background: var(--bg-card);
+        padding: 32px;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 400px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-lg);
+        transform: scale(0.9) translateY(20px);
+        transition: transform 0.3s ease;
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+
+      .modal-content.wide {
+        max-width: 1000px;
+        width: 95%;
+        padding: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        border-radius: 24px;
+      }
+
+      .modal-content.wide .modal-header {
+        padding: 20px 28px 0;
+        margin-bottom: 0;
+        border-bottom: none;
+      }
+
+      .admin-scroll-body {
+        overflow-y: auto;
+        padding: 0 40px 40px;
+      }
+
+      .admin-scroll-body::-webkit-scrollbar { width: 8px; }
+      .admin-scroll-body::-webkit-scrollbar-track { background: transparent; }
+      .admin-scroll-body::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 8px; }
+      .admin-scroll-body::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+      .modal-overlay.active .modal-content { transform: scale(1) translateY(0); }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 15px;
+      }
+
+      .modal-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .close-btn {
+        background: var(--bg-surface-3);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        color: var(--text-muted);
+        padding: 6px;
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+      .close-btn:hover {
+        color: var(--danger);
+        background: var(--danger-light);
+        border-color: var(--danger-border);
+        transform: rotate(90deg);
+      }
+
+      .input-group { margin-bottom: 20px; position: relative; }
+
+      .input-group label {
+        display: block;
+        text-align: left;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 8px;
+        color: var(--text-muted);
+      }
+
+      .input-wrapper { position: relative; display: flex; align-items: center; }
+
+      .input-group input {
+        width: 100%;
+        padding: 14px 16px;
+        padding-right: 45px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--input-bg);
+        color: var(--text-main);
+        font-family: inherit;
+        font-size: 1rem;
+        transition: all 0.2s;
+      }
+      
+      .input-group input::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+      .input-group input:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: var(--input-bg-focus);
+        box-shadow: 0 0 0 4px var(--accent-glow);
+      }
+
+      .toggle-password {
+        position: absolute;
+        right: 12px;
+        cursor: pointer;
+        color: var(--text-muted);
+        background: none;
+        border: none;
+        padding: 4px;
+        border-radius: 4px;
+      }
+      .toggle-password:hover { color: var(--text-main); background: var(--bg-surface-3); }
+
+      input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
+      input[type="password"]::-webkit-credentials-auto-fill-button, input[type="password"]::-webkit-strong-password-auto-fill-button {
+        display: none !important; visibility: hidden; pointer-events: none; position: absolute; right: 0;
+      }
+
+      .modal-btn {
+        width: 100%;
+        padding: 14px;
+        background: var(--accent);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        margin-top: 8px;
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+
+      .modal-btn:hover {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px var(--accent-glow);
+      }
+      .modal-btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+      .modal-btn.secondary:hover { background: var(--accent-light); }
+
+      .modal-btn.danger {
+        background: var(--danger-light);
+        color: var(--danger);
+        border: 1px solid var(--danger-border);
+      }
+      .modal-btn.danger:hover { background: var(--danger); color: #ffffff; }
+
+      .modal-btn.auto {
+        width: auto;
+        margin-top: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+      }
+
+      .error-msg, .success-msg {
+        font-size: 0.85rem;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        display: none;
+        text-align: center;
+        font-weight: 600;
+      }
+      .error-msg { color: var(--danger); }
+      .success-msg { color: var(--success); }
+
+      /* ===== Admin Panel (User Access) ===== */
+      .admin-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 24px;
+        margin: 24px 0 32px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .admin-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        color: var(--accent);
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+
+      .admin-page-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        letter-spacing: -1px;
+        color: var(--text-main);
+        margin-bottom: 6px;
+      }
+
+      .admin-page-subtitle {
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        font-weight: 500;
+        margin-bottom: 0;
+        text-align: left;
+        max-width: 45ch;
+      }
+
+      .stat-box-group { display: flex; gap: 12px; flex-shrink: 0; }
+
+      .stat-box {
+        position: relative;
+        background: var(--bg-surface-2);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px 22px 16px 18px;
+        text-align: left;
+        min-width: 120px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: all 0.2s ease;
+      }
+      .stat-box:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: var(--shadow-md); }
+
+      .stat-icon {
+        width: 32px; height: 32px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 4px;
+      }
+
+      .stat-box .num { display: block; font-size: 1.75rem; font-weight: 700; line-height: 1; color: var(--text-main); }
+      .stat-box .lbl { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+
+      .stat-teal .stat-icon { background: var(--accent-light); color: var(--accent); }
+      .stat-teal .num { color: var(--accent); }
+      .stat-amber .stat-icon { background: var(--warning-light); color: var(--warning); }
+      .stat-amber .num { color: var(--warning); }
+      .stat-slate .stat-icon { background: var(--bg-surface-3); color: var(--text-muted); }
+
+      .section-card {
+        background: var(--bg-surface-2);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        overflow: hidden;
+        margin-bottom: 24px;
+        text-align: left;
+        box-shadow: var(--shadow-sm);
+        transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      }
+      .section-card:hover { border-color: var(--border-hover); box-shadow: var(--shadow-md); }
+
+      .section-card-header {
+        padding: 22px 28px;
+        background: linear-gradient(90deg, var(--accent-light), transparent);
+        display: flex; align-items: center; gap: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .section-icon-box {
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        background: var(--accent-light);
+        color: var(--accent);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .section-card-header h4 { font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
+      .section-card-header span { font-size: 0.88rem; color: var(--text-muted); font-weight: 500; }
+
+      .section-card-body { padding: 28px; }
+
+      .field-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 18px;
+      }
+
+      .toggle-row {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 24px;
+        margin-top: 8px;
+        border-top: 1px solid var(--border);
+      }
+
+      .module-access-wrapper {
+        width: 100%;
+      }
+
+      .module-access-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        display: block;
+      }
+
+      /* Inline Modules with Select Box */
+      .module-priv-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .module-priv-block {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid var(--border);
+        border-left: 3px solid transparent;
+        border-radius: 10px;
+        padding: 8px 14px;
+        transition: all 0.2s ease;
+        background: var(--bg-card);
+      }
+
+      .module-priv-block.granted {
+        border-color: var(--success-border);
+        border-left-color: var(--success);
+        background: var(--success-light);
+      }
+
+      .module-priv-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 0;
+      }
+
+      .module-priv-name::before {
+        content: "";
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        flex-shrink: 0;
+        transition: background 0.2s ease;
+      }
+
+      .module-priv-block.granted .module-priv-name::before {
+        background: var(--success);
+        box-shadow: 0 0 0 3px var(--success-border);
+      }
+
+      .module-priv-select {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--bg-surface-3);
+        color: var(--text-main);
+        font-family: inherit;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        outline: none;
+      }
+      
+      .module-priv-select:focus, .module-priv-select:hover {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-glow);
+      }
+
+      .admin-full-access-note {
+        font-size: 0.85rem;
+        color: var(--success);
+        font-weight: 600;
+        padding: 14px 16px;
+        border: 1px dashed var(--success-border);
+        border-radius: 12px;
+        background: var(--success-light);
+        text-align: center;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .create-user-footer { display: flex; justify-content: flex-end; margin-top: 24px; }
+
+      .accounts-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+        margin-top: 8px;
+      }
+
+      .accounts-header h3 { font-size: 1.4rem; font-weight: 700; color: var(--text-main); }
+      .accounts-header p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0; font-weight: 500; }
+
+      .count-pill {
+        background: var(--accent-light);
+        color: var(--accent);
+        padding: 8px 18px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .account-card {
+        position: relative;
+        border-top: 1px solid var(--border);
+        padding: 28px 28px 28px 32px;
+        transition: background 0.2s ease;
+      }
+      .account-card:first-child { border-top: none; }
+      .account-card:hover { background: var(--bg-surface-3); }
+      .account-card::before {
+        content: "";
+        position: absolute;
+        left: 0; top: 20px; bottom: 20px;
+        width: 4px;
+        border-radius: 0 4px 4px 0;
+        background: var(--accent);
+        opacity: 0.5;
+        transition: opacity 0.2s;
+      }
+      .account-card:hover::before { opacity: 1; }
+      .account-card.is-admin::before { background: var(--warning); }
+      .account-card.is-you { background: var(--accent-light); }
+
+      .account-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .account-identity { display: flex; align-items: center; gap: 14px; }
+
+      .avatar-circle {
+        width: 48px; height: 48px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+        color: white;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 1.2rem;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px -3px var(--accent-glow);
+      }
+
+      .account-card.is-admin .avatar-circle {
+        background: linear-gradient(135deg, var(--warning), #b45309);
+        box-shadow: 0 4px 12px -3px rgba(180, 83, 9, 0.3);
+      }
+
+      .account-name { font-weight: 700; font-size: 1.05rem; color: var(--text-main); }
+      .account-email { font-size: 0.88rem; color: var(--text-muted); }
+
+      .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+      .badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .badge-role-admin { background: var(--warning-light); color: var(--warning); }
+      .badge-role-user { background: var(--accent-light); color: var(--accent); }
+      .badge-you { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+
+      .account-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+      }
+
+      .muted-note { color: var(--text-muted); font-size: 0.88rem; font-weight: 500; }
+      .account-footer-actions { display: flex; gap: 10px; }
+
+      .footer {
+        position: relative;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        opacity: 0.6;
+        z-index: 2;
+      }
+
+      @media (max-width: 600px) {
+        h1 { font-size: 2.2rem; }
+        .container { padding: 30px; width: 95%; }
+        .admin-page-title { font-size: 1.6rem; }
+        .stat-box-group { width: 100%; }
+        .stat-box { flex: 1; min-width: auto; }
+        .section-card-body { padding: 20px; }
+        .admin-scroll-body { padding: 0 20px 20px; }
+      }
+    </style>
+    <link rel="stylesheet" href="responsive.css" />
+  </head>
+  <body>
+    <canvas id="bgCanvas"></canvas>
+    <div class="ambient-light"></div>
+
+    <button class="theme-btn" onclick="toggleTheme()">
+      <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+      </svg>
+      <svg class="icon-sun" style="display: none;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+      </svg>
+      <span class="theme-text">Light Mode</span>
+    </button>
+
+    <button class="admin-btn" onclick="openModal('adminAuthModal')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      </svg>
+      Admin Panel
+    </button>
+
+    <div class="container">
+      <h1>DIT STORES</h1>
+      <p>Inventory Management System</p>
+
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="input-group">
+          <label for="loginUser">Username or Email</label>
+          <input type="text" id="loginUser" placeholder="Enter username or email" required="" />
+        </div>
+        <div class="input-group">
+          <label for="loginPass">Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="loginPass" placeholder="Enter password" required="" />
+            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('loginPass', this)">
+              <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg class="eye-closed" style="display: none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div id="loginError" class="error-msg">Invalid username/email or password.</div>
+        <button type="submit" class="enter-btn" style="width: 100%">
+          Login
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </form>
+    </div>
+
+    <div id="adminAuthModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Admin Verification</h3>
+          <button class="close-btn" onclick="closeModal('adminAuthModal')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <form id="adminAuthForm" onsubmit="verifyAdmin(event)">
+          <div class="input-group">
+            <label for="adminEmailInput">Admin Email</label>
+            <input type="email" id="adminEmailInput" placeholder="admin@dit.local" required="" />
+          </div>
+          <div class="input-group">
+            <label for="adminPasswordInput">Admin Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="adminPasswordInput" placeholder="Required for access" required="" />
+              <button type="button" class="toggle-password" onclick="togglePasswordVisibility('adminPasswordInput', this)">
+                <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="eye-closed" style="display: none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div id="adminAuthError" class="error-msg">Incorrect email or password.</div>
+          <button type="submit" class="modal-btn">Verify</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="adminDashboardModal" class="modal-overlay">
+      <div class="modal-content wide">
+        <div class="modal-header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0">
+          <div style="flex: 1"></div>
+          <button class="close-btn" onclick="closeModal('adminDashboardModal')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="admin-scroll-body">
+          <div class="admin-page-header">
+            <div>
+              <div class="admin-eyebrow">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"></path>
+                </svg>
+                System Administration
+              </div>
+              <div class="admin-page-title">User access</div>
+              <p class="admin-page-subtitle">Create accounts, reset credentials, and control access to each inventory module.</p>
+            </div>
+            <div class="stat-box-group">
+              <div class="stat-box stat-teal">
+                <div class="stat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                </div>
+                <span id="totalUsersCount" class="num">0</span>
+                <span class="lbl">Total users</span>
+              </div>
+              <div class="stat-box stat-amber">
+                <div class="stat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"></path>
+                  </svg>
+                </div>
+                <span id="adminCount" class="num">0</span>
+                <span class="lbl">Admins</span>
+              </div>
+              <div class="stat-box stat-slate">
+                <div class="stat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                    <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                    <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                    <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                  </svg>
+                </div>
+                <span id="moduleCount" class="num">3</span>
+                <span class="lbl">Modules</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-card-header">
+              <div class="section-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <line x1="19" y1="8" x2="19" y2="14"></line>
+                  <line x1="22" y1="11" x2="16" y2="11"></line>
+                </svg>
+              </div>
+              <div>
+                <h4>Add a new user</h4>
+                <span>Set login details and initial access privileges.</span>
+              </div>
+            </div>
+            <div class="section-card-body">
+              <form id="createUserForm" onsubmit="handleCreateUser(event)">
+                <div class="field-grid" style="margin-bottom: 24px">
+                  <div class="input-group" style="margin-bottom: 0">
+                    <label for="newFullName">Full name</label>
+                    <input type="text" id="newFullName" placeholder="e.g. Ama Mensah" required style="padding-right: 16px" />
+                  </div>
+                  <div class="input-group" style="margin-bottom: 0">
+                    <label for="newUsername">Username</label>
+                    <input type="text" id="newUsername" placeholder="e.g. ama.mensah" required style="padding-right: 16px" />
+                  </div>
+                  <div class="input-group" style="margin-bottom: 0">
+                    <label for="newEmail">Email address</label>
+                    <input type="email" id="newEmail" placeholder="name@dit.local" required style="padding-right: 16px" />
+                  </div>
+                  <div class="input-group" style="margin-bottom: 0">
+                    <label for="newTempPassword">Temporary password</label>
+                    <div class="input-wrapper">
+                      <input type="password" id="newTempPassword" placeholder="Minimum 8 characters" minlength="8" required />
+                      <button type="button" class="toggle-password" onclick="togglePasswordVisibility('newTempPassword', this)">
+                        <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <svg class="eye-closed" style="display: none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                          <line x1="1" y1="1" x2="23" y2="23"></line>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="input-group" style="margin-bottom: 0">
+                    <label for="newRole">Account role</label>
+                    <select id="newRole" class="account-role-select" style="width: 100%; padding: 12px 14px; font-size: 0.95rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-surface-3); color: var(--text-main); font-family: inherit; font-weight: 600" onchange="updateCreateRoleAccess()">
+                      <option value="User">User</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="toggle-row">
+                  <div class="module-access-wrapper" id="newUserModulesWrapper">
+                    <span class="module-access-label">Module access &amp; privileges</span>
+                    <div class="module-priv-group" id="newUserModules"></div>
+                  </div>
+                  <div class="admin-full-access-note" id="newUserAdminNote" style="display: none">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    Admins have full access to all modules by default.
+                  </div>
+                </div>
+
+                <div id="createMsg" class="success-msg">User created successfully!</div>
+                <div id="createError" class="error-msg">A user with that email already exists.</div>
+
+                <div class="create-user-footer">
+                  <button type="submit" class="modal-btn auto">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Create user
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="accounts-header">
+            <div>
+              <h3>User accounts</h3>
+              <p>Changes are applied when you select Save changes.</p>
+            </div>
+            <span id="accountsCountPill" class="count-pill">0 accounts</span>
+          </div>
+
+          <div class="section-card" style="margin-bottom: 0">
+            <div id="userAccountsList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">Secure Inventory System</div>
+
+    <script src="neon-storage.js"></script>
+    <script>
+      const memoryStore = window.neonStorage;
+
+      // --- Theme Toggle ---
+      function toggleTheme() {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme') || 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', newTheme);
+        memoryStore.setItem('theme', newTheme);
+        
+        const text = document.querySelector('.theme-text');
+        const moonIcon = document.querySelector('.icon-moon');
+        const sunIcon = document.querySelector('.icon-sun');
+        if (newTheme === 'light') {
+          text.textContent = 'Dark Mode';
+          moonIcon.style.display = 'none';
+          sunIcon.style.display = 'block';
+        } else {
+          text.textContent = 'Light Mode';
+          moonIcon.style.display = 'block';
+          sunIcon.style.display = 'none';
+        }
+      }
+
+      (function initTheme() {
+        let savedTheme = 'dark';
+        try {
+          savedTheme = memoryStore.getItem('theme') || 'dark';
+        } catch (error) {
+          console.error('Could not load theme from Neon:', error);
+        }
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        const text = document.querySelector('.theme-text');
+        const moonIcon = document.querySelector('.icon-moon');
+        const sunIcon = document.querySelector('.icon-sun');
+        if (savedTheme === 'light') {
+          text.textContent = 'Dark Mode';
+          moonIcon.style.display = 'none';
+          sunIcon.style.display = 'block';
+        }
+      })();
+
+      // --- Background Animation ---
+      const canvas = document.getElementById("bgCanvas");
+      const ctx = canvas.getContext("2d");
+      let particles = [];
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      class Particle {
+        constructor() {
+          this.x = Math.random() * canvas.width;
+          this.y = Math.random() * canvas.height;
+          this.size = Math.random() * 2 + 1;
+          this.speedX = Math.random() * 0.5 - 0.25;
+          this.speedY = Math.random() * 0.5 - 0.25;
+        }
+        update() {
+          this.x += this.speedX;
+          this.y += this.speedY;
+          if (this.x > canvas.width || this.x < 0) this.speedX *= -1;
+          if (this.y > canvas.height || this.y < 0) this.speedY *= -1;
+        }
+        draw() {
+          const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+          ctx.fillStyle = isLight ? "rgba(15, 23, 42, 0.3)" : "rgba(255, 255, 255, 0.4)";
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function initParticles() {
+        particles = [];
+        const numParticles = Math.floor((canvas.width * canvas.height) / 9000);
+        for (let i = 0; i < numParticles; i++) particles.push(new Particle());
+      }
+      initParticles();
+      window.addEventListener("resize", initParticles);
+
+      function animateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const lineColorRGB = isLight ? "79, 70, 229" : "129, 140, 248";
+        
+        for (let i = 0; i < particles.length; i++) {
+          particles[i].update();
+          particles[i].draw();
+          for (let j = i; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 120) {
+              ctx.beginPath();
+              ctx.strokeStyle = `rgba(${lineColorRGB}, ${0.15 - dist / 1000})`;
+              ctx.lineWidth = 1;
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.stroke();
+            }
+          }
+        }
+        requestAnimationFrame(animateParticles);
+      }
+      animateParticles();
+
+      // --- Helper: Toggle Password Visibility ---
+      window.togglePasswordVisibility = function (inputId, btn) {
+        const input = document.getElementById(inputId);
+        const eyeOpen = btn.querySelector(".eye-open");
+        const eyeClosed = btn.querySelector(".eye-closed");
+
+        if (input.type === "password") {
+          input.type = "text";
+          eyeOpen.style.display = "none";
+          eyeClosed.style.display = "block";
+        } else {
+          input.type = "password";
+          eyeOpen.style.display = "block";
+          eyeClosed.style.display = "none";
+        }
+      };
+
+      // --- Module Definitions ---
+      const MODULES = [
+        { key: "clothing", label: "Clothing" },
+        { key: "inventories", label: "Inventories" },
+        { key: "payStores", label: "Pay-stores" },
+      ];
+
+      function normalizeModulePrivileges(value) {
+        if (value && typeof value === "object") {
+          return {
+            view: !!value.view,
+            add: !!value.add,
+            edit: !!value.edit,
+            delete: !!value.delete,
+          };
+        }
+        if (value === true) {
+          return { view: true, add: true, edit: true, delete: true };
+        }
+        return { view: false, add: false, edit: false, delete: false };
+      }
+
+      // Determine the select box value based on the boolean privileges
+      function getPermissionLevel(priv) {
+        if (priv.view && priv.add && priv.edit && priv.delete) return "full";
+        if (priv.view && priv.add && priv.edit) return "edit";
+        if (priv.view && priv.add) return "add";
+        if (priv.view && priv.delete) return "delete"; // View & Delete mapped
+        if (priv.view) return "view";
+        return "none";
+      }
+
+      // Builds inline HTML for module privileges using a Select box per module
+      function buildModulePrivilegesHtml(modules) {
+        modules = modules || {};
+        return MODULES.map((m) => {
+          const priv = normalizeModulePrivileges(modules[m.key]);
+          const level = getPermissionLevel(priv);
+          const granted = level !== "none";
+          
+          return `
+            <div class="module-priv-block ${granted ? "granted" : ""}" data-module-key="${m.key}">
+              <span class="module-priv-name">${m.label}</span>
+              <select class="module-priv-select" onchange="onPrivChange(this)">
+                <option value="none" ${level === 'none' ? 'selected' : ''}>No Access</option>
+                <option value="view" ${level === 'view' ? 'selected' : ''}>View Only</option>
+                <option value="add" ${level === 'add' ? 'selected' : ''}>View & Add</option>
+                <option value="edit" ${level === 'edit' ? 'selected' : ''}>View & Edit</option>
+                <option value="delete" ${level === 'delete' ? 'selected' : ''}>View & Delete</option>
+                <option value="full" ${level === 'full' ? 'selected' : ''}>Full Access</option>
+              </select>
+            </div>`;
+        }).join("");
+      }
+
+      // Updates the block's styling when the dropdown changes
+      window.onPrivChange = function (select) {
+        const block = select.closest(".module-priv-block");
+        if (block) {
+          const granted = select.value !== "none";
+          block.classList.toggle("granted", granted);
+        }
+      };
+
+      // Reads the select boxes and converts them back to boolean privileges
+      function collectModulePrivileges(containerId) {
+        const modules = {};
+        const container = document.getElementById(containerId);
+        if (!container) return {};
+
+        container.querySelectorAll(".module-priv-block").forEach((block) => {
+          const key = block.dataset.moduleKey;
+          const select = block.querySelector("select");
+          const val = select ? select.value : "none";
+          
+          let priv = { view: false, add: false, edit: false, delete: false };
+          // Base view permission for any level other than 'none'
+          if (["view", "add", "edit", "delete", "full"].includes(val)) priv.view = true;
+          if (["add", "edit", "full"].includes(val)) priv.add = true;
+          if (["edit", "full"].includes(val)) priv.edit = true;
+          if (["delete", "full"].includes(val)) priv.delete = true;
+          
+          modules[key] = priv;
+        });
+        return modules;
+      }
+
+      function getFullPrivileges() {
+        const fullModules = {};
+        MODULES.forEach((m) => {
+          fullModules[m.key] = { view: true, add: true, edit: true, delete: true };
+        });
+        return fullModules;
+      }
+
+      document.getElementById("newUserModules").innerHTML = buildModulePrivilegesHtml({});
+
+      // --- Data Management ---
+      const STORAGE_KEY = "dit_stores_users";
+      const DEFAULT_USERS = [
+        {
+          fullName: "Admin",
+          username: "admin",
+          email: "admin@dit.local",
+          password: "Password@123",
+          role: "Admin",
+          modules: getFullPrivileges(),
+        },
+      ];
+
+      function isValidUserShape(parsed) {
+        return (
+          Array.isArray(parsed) &&
+          parsed.length > 0 &&
+          typeof parsed[0].email === "string" &&
+          typeof parsed[0].modules === "object"
+        );
+      }
+
+      async function getUsers() {
+        try {
+          // Use getItemAsync so it auto-retries if the initial page load failed
+          const raw = await memoryStore.getItemAsync(STORAGE_KEY);
+          if (!raw) {
+            await memoryStore.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
+            return JSON.parse(JSON.stringify(DEFAULT_USERS));
+          }
+          const parsed = JSON.parse(raw);
+          if (!isValidUserShape(parsed)) {
+            await memoryStore.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
+            return JSON.parse(JSON.stringify(DEFAULT_USERS));
+          }
+          return parsed;
+        } catch (err) {
+          console.error("Failed to load users from Neon:", err);
+          throw err;
+        }
+      }
+
+      async function saveUsers(users) {
+        try {
+          memoryStore.setItem(STORAGE_KEY, JSON.stringify(users));
+          return users;
+        } catch (err) {
+          console.error("Failed to save users:", err);
+          alert("Could not save changes. Your browser storage may be full or disabled.");
+          throw err;
+        }
+      }
+
+      // --- Modal Controls ---
+      function openModal(id) {
+        document.getElementById(id).classList.add("active");
+        if (id === "adminDashboardModal") loadAdminDashboard();
+      }
+
+      function closeModal(id) {
+        document.getElementById(id).classList.remove("active");
+        const modal = document.getElementById(id);
+        modal.querySelectorAll("form").forEach((f) => f.reset());
+        modal.querySelectorAll(".error-msg, .success-msg").forEach((el) => (el.style.display = "none"));
+        
+        // Reset select boxes in the create user form
+        modal.querySelectorAll(".module-priv-select").forEach((select) => {
+          select.value = "none";
+          const block = select.closest(".module-priv-block");
+          if (block) block.classList.remove("granted");
+        });
+
+        modal.querySelectorAll(".toggle-password").forEach((btn) => {
+          const inputWrapper = btn.closest(".input-wrapper");
+          const input = inputWrapper ? inputWrapper.querySelector("input") : null;
+          // Reset input back to password type if it was toggled to text
+          if (input) input.type = "password";
+
+          const eyeOpen = btn.querySelector(".eye-open");
+          const eyeClosed = btn.querySelector(".eye-closed");
+          if (eyeOpen) eyeOpen.style.display = "block";
+          if (eyeClosed) eyeClosed.style.display = "none";
+        });
+      }
+
+      document.querySelectorAll(".modal-overlay").forEach((modal) => {
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) closeModal(modal.id);
+        });
+      });
+
+      function isAdminRole(role) {
+        return role === "Admin" || role === "Administrator";
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[char]);
+      }
+
+      // --- Admin Login ---
+      async function verifyAdmin(e) {
+        e.preventDefault();
+        const emailInput = document.getElementById("adminEmailInput").value.trim().toLowerCase();
+        const passInput = document.getElementById("adminPasswordInput").value.trim();
+        const errorDiv = document.getElementById("adminAuthError");
+        errorDiv.style.display = "none";
+        try {
+          const users = await getUsers();
+          const adminUser = users.find(
+            (u) =>
+              u.email.toLowerCase().trim() === emailInput &&
+              u.password.trim() === passInput &&
+              isAdminRole(u.role)
+          );
+
+          if (adminUser) {
+            sessionStorage.setItem("isAdminSession", "true");
+            sessionStorage.setItem("loggedInUser", JSON.stringify(adminUser));
+            closeModal("adminAuthModal");
+            await loadAdminDashboard();
+            openModal("adminDashboardModal");
+            document.getElementById("adminAuthForm").reset();
+            errorDiv.style.display = "none";
+          } else {
+            errorDiv.textContent = "Incorrect email or password.";
+            errorDiv.style.display = "block";
+          }
+        } catch (err) {
+          console.error("Admin verification failed:", err);
+          errorDiv.textContent = "Something went wrong. Please try again.";
+          errorDiv.style.display = "block";
+        }
+      }
+
+      // --- Render the "User access" dashboard ---
+      async function loadAdminDashboard() {
+        const users = await getUsers();
+        const admins = users.filter((u) => isAdminRole(u.role));
+        document.getElementById("totalUsersCount").innerText = users.length;
+        document.getElementById("adminCount").innerText = admins.length;
+        document.getElementById("moduleCount").innerText = MODULES.length;
+        document.getElementById("accountsCountPill").innerText =
+          users.length === 1 ? "1 account" : `${users.length} accounts`;
+
+        const currentSession = JSON.parse(sessionStorage.getItem("loggedInUser") || "null");
+
+        const list = document.getElementById("userAccountsList");
+        list.innerHTML = "";
+
+        users.forEach((user, index) => {
+          const isYou = currentSession && currentSession.email === user.email;
+          const initials = (user.fullName || user.email).trim().charAt(0).toUpperCase();
+          const roleBadgeClass = isAdminRole(user.role) ? "badge-role-admin" : "badge-role-user";
+
+          const isAdmin = isAdminRole(user.role);
+          const modulePrivilegesHtml = buildModulePrivilegesHtml(user.modules);
+
+          const accessSection = isAdmin 
+            ? `<div class="admin-full-access-note">
+                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                 </svg>
+                 Admins have full access to all modules by default.
+               </div>`
+            : `<div class="module-priv-group" id="acc-modules-${index}">${modulePrivilegesHtml}</div>`;
+
+          const card = document.createElement("div");
+          card.className = `account-card ${isAdmin ? "is-admin" : "is-user"}${isYou ? " is-you" : ""}`;
+          
+          card.innerHTML = `
+            <div class="account-header">
+              <div class="account-identity">
+                <div class="avatar-circle">${initials}</div>
+                <div>
+                  <div class="account-name">${escapeHtml(user.fullName || "(No name)")}</div>
+                    <div class="account-email">${user.username ? `@${escapeHtml(user.username)} - ` : ""}${escapeHtml(user.email)}</div>
+                </div>
+              </div>
+              <div class="badge-row">
+                <span class="badge ${roleBadgeClass}">${escapeHtml(user.role)}</span>
+                ${isYou ? '<span class="badge badge-you">You</span>' : ""}
+              </div>
+            </div>
+
+            <div class="field-grid" style="margin-bottom: 0">
+              <div class="input-group" style="margin-bottom: 0">
+                <label>Full name</label>
+                <input type="text" id="acc-name-${index}" value="${escapeHtml(user.fullName || "")}" style="padding-right: 16px" />
+              </div>
+              <div class="input-group" style="margin-bottom: 0">
+                <label>Username</label>
+                <input type="text" id="acc-username-${index}" value="${escapeHtml(user.username || "")}" style="padding-right: 16px" />
+              </div>
+              <div class="input-group" style="margin-bottom: 0">
+                <label>Email address</label>
+                <input type="email" id="acc-email-${index}" value="${escapeHtml(user.email)}" style="padding-right: 16px" />
+              </div>
+              <div class="input-group" style="margin-bottom: 0">
+                <label>Reset password</label>
+                <div class="input-wrapper">
+                  <input type="password" id="acc-pass-${index}" placeholder="Leave unchanged" />
+                  <button type="button" class="toggle-password" onclick="togglePasswordVisibility('acc-pass-${index}', this)">
+                    <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg class="eye-closed" style="display: none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="toggle-row">
+              <div class="module-access-wrapper" id="acc-modules-${index}Wrapper">
+                <span class="module-access-label">Module access &amp; privileges</span>
+                ${accessSection}
+              </div>
+            </div>
+
+            <div id="acc-msg-${index}" class="success-msg">Changes saved!</div>
+
+            <div class="account-footer">
+              <button type="button" class="modal-btn auto" onclick="toggleAccountRole(${index})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M19 8v6"></path>
+                  <path d="M22 11h-6"></path>
+                </svg>
+                ${isAdmin ? "Switch to User" : "Make Admin"}
+              </button>
+              ${isYou ? '<span class="muted-note">Your active account</span>' : `<button type="button" class="modal-btn danger auto" onclick="deleteAccount(${index})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Delete
+              </button>`}
+              <button type="button" class="modal-btn auto" onclick="saveAccount(${index})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Save changes
+              </button>
+            </div>
+          `;
+          list.appendChild(card);
+        });
+      }
+
+      // --- Create User ---
+      function updateCreateRoleAccess() {
+        const isAdmin = document.getElementById("newRole").value === "Admin";
+        document.getElementById("newUserModulesWrapper").style.display = isAdmin ? "none" : "block";
+        document.getElementById("newUserAdminNote").style.display = isAdmin ? "flex" : "none";
+      }
+
+      async function handleCreateUser(e) {
+        e.preventDefault();
+        const fullName = document.getElementById("newFullName").value.trim();
+        const username = document.getElementById("newUsername").value.trim();
+        const email = document.getElementById("newEmail").value.trim();
+        const tempPassword = document.getElementById("newTempPassword").value;
+        const role = document.getElementById("newRole").value;
+        const msg = document.getElementById("createMsg");
+        const errorDiv = document.getElementById("createError");
+        errorDiv.style.display = "none";
+
+        const users = await getUsers();
+        if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
+          errorDiv.textContent = "A user with that email address already exists.";
+          errorDiv.style.display = "block";
+          return;
+        }
+        if (users.find((u) => (u.username || "").toLowerCase() === username.toLowerCase())) {
+          errorDiv.textContent = "A user with that username already exists.";
+          errorDiv.style.display = "block";
+          return;
+        }
+
+        const modules = role === "Admin" ? getFullPrivileges() : collectModulePrivileges("newUserModules");
+
+        const newUser = {
+          fullName,
+          username,
+          email,
+          password: tempPassword,
+          role,
+          modules,
+        };
+
+        users.push(newUser);
+        await saveUsers(users);
+
+        msg.style.display = "block";
+        document.getElementById("createUserForm").reset();
+        updateCreateRoleAccess();
+        
+        // Reset module selects visually
+        document.getElementById("newUserModules").innerHTML = buildModulePrivilegesHtml({});
+
+        await loadAdminDashboard();
+        setTimeout(() => {
+          msg.style.display = "none";
+        }, 1800);
+      }
+
+      // --- Save Account ---
+      async function saveAccount(index) {
+        const users = await getUsers();
+        const user = users[index];
+        if (!user) return;
+
+        const newName = document.getElementById(`acc-name-${index}`).value.trim();
+        const newUsername = document.getElementById(`acc-username-${index}`).value.trim();
+        const newEmail = document.getElementById(`acc-email-${index}`).value.trim();
+        const newPassword = document.getElementById(`acc-pass-${index}`).value;
+
+        if (users.find((u, i) => i !== index && u.email.toLowerCase() === newEmail.toLowerCase())) {
+          alert("Another user already has that email address.");
+          return;
+        }
+        if (newUsername && users.find((u, i) => i !== index && (u.username || "").toLowerCase() === newUsername.toLowerCase())) {
+          alert("Another user already has that username.");
+          return;
+        }
+
+        user.fullName = newName;
+        user.username = newUsername;
+        user.email = newEmail;
+        if (newPassword.trim() !== "") user.password = newPassword;
+
+        // Only update modules if they are not an administrator
+        if (!isAdminRole(user.role)) {
+          user.modules = collectModulePrivileges(`acc-modules-${index}`);
+        }
+
+        await saveUsers(users);
+
+        const currentSession = JSON.parse(sessionStorage.getItem("loggedInUser") || "null");
+        if (currentSession && currentSession.email.toLowerCase() === newEmail.toLowerCase()) {
+          sessionStorage.setItem("loggedInUser", JSON.stringify(user));
+        }
+
+        const msg = document.getElementById(`acc-msg-${index}`);
+        if (msg) msg.style.display = "block";
+        await loadAdminDashboard();
+      }
+
+      // --- Toggle Account Role ---
+      async function toggleAccountRole(index) {
+        const users = await getUsers();
+        const user = users[index];
+        if (!user) return;
+
+        const isAdmin = isAdminRole(user.role);
+        if (isAdmin && users.filter((account) => isAdminRole(account.role)).length <= 1) {
+          alert("Cannot switch the only admin to a user.");
+          return;
+        }
+
+        const nextRole = isAdmin ? "User" : "Admin";
+        const action = isAdmin ? "switch this account to a user" : "make this account an admin";
+        if (!confirm(`Are you sure you want to ${action}?`)) return;
+
+        user.role = nextRole;
+        if (!isAdmin) user.modules = getFullPrivileges();
+        await saveUsers(users);
+
+        const currentSession = JSON.parse(sessionStorage.getItem("loggedInUser") || "null");
+        if (currentSession && currentSession.email.toLowerCase() === user.email.toLowerCase()) {
+          sessionStorage.setItem("loggedInUser", JSON.stringify(user));
+          sessionStorage.setItem("username", user.username || user.fullName || user.email);
+          if (isAdmin) {
+            sessionStorage.removeItem("isAdminSession");
+            closeModal("adminDashboardModal");
+          } else {
+            sessionStorage.setItem("isAdminSession", "true");
+          }
+        }
+
+        await loadAdminDashboard();
+      }
+
+      // --- Delete Account ---
+      async function deleteAccount(index) {
+        const users = await getUsers();
+        const user = users[index];
+        if (!user) return;
+
+        if (users.length <= 1) {
+          alert("Cannot delete the only user account.");
+          return;
+        }
+        if (isAdminRole(user.role) && users.filter((u) => isAdminRole(u.role)).length <= 1) {
+          alert("Cannot delete the only admin account.");
+          return;
+        }
+
+        if (confirm(`Are you sure you want to delete "${user.fullName || user.email}"?`)) {
+          const filtered = users.filter((u, i) => i !== index);
+          await saveUsers(filtered);
+          await loadAdminDashboard();
+        }
+      }
+
+      // --- Landing Page Login ---
+      async function handleLogin(e) {
+        e.preventDefault();
+        const identifier = document.getElementById("loginUser").value.trim().toLowerCase();
+        const password = document.getElementById("loginPass").value.trim();
+        const errorDiv = document.getElementById("loginError");
+        const submitBtn = e.target.querySelector("button[type='submit']");
+
+        errorDiv.style.display = "none";
+
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Signing in…"; }
+
+        try {
+          const users = await getUsers();
+          const user = users.find(
+            (u) =>
+              (u.email || "").toLowerCase().trim() === identifier ||
+              (u.username || "").toLowerCase().trim() === identifier
+          );
+          const authenticatedUser = user && user.password.trim() === password ? user : null;
+
+          if (authenticatedUser) {
+            sessionStorage.setItem("loggedInUser", JSON.stringify(authenticatedUser));
+            sessionStorage.setItem("username", authenticatedUser.username || authenticatedUser.fullName || authenticatedUser.email);
+            if (isAdminRole(authenticatedUser.role)) sessionStorage.setItem("isAdminSession", "true");
+            window.location.href = "dashboard.html";
+            return;
+          }
+          errorDiv.textContent = "Invalid username/email or password.";
+          errorDiv.style.display = "block";
+        } catch (error) {
+          console.error("Login error:", error);
+          errorDiv.textContent = "Cannot reach the database. Please check your connection and try again.";
+          errorDiv.style.display = "block";
+        } finally {
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Login"; }
+        }
+      }
+    </script>
+  </body>
+</html>
