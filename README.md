@@ -33,3 +33,5 @@ For Vercel, import this folder as a project and add `DATABASE_URL` under Project
 ## Storage model
 
 The browser uses `/api/storage` as a small key/value API. Application records are serialized JSON values stored in the Neon `app_storage` table. The browser keeps only a temporary in-memory cache for the current page; it does not use `localStorage` or IndexedDB. Login state in `sessionStorage` is temporary session metadata, not application data.
+
+<!-- deploy trigger -->
