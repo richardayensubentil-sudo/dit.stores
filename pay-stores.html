@@ -3401,7 +3401,9 @@
         showTable(activeTableId);
       }
 
-      document.addEventListener("DOMContentLoaded", init);
+      document.addEventListener("DOMContentLoaded", function() {
+        window.neonStorage.ready().then(function() { init(); });
+      });
 
       /* ============================================================
          AUTOCOMPLETE â€” SVC NO. (military) & Name (civilian)

@@ -11139,7 +11139,7 @@ body::after {
                 });
             }
 
-            document.addEventListener('DOMContentLoaded', () => { loadState(); initApp(); });
+            document.addEventListener('DOMContentLoaded', () => { window.neonStorage.ready().then(() => { loadState(); initApp(); }); });
 
             function sortOffices() { if (Array.isArray(state.data.offices)) state.data.offices.sort((a, b) => (a.dept || '').localeCompare(b.dept || '') || (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })); }
             function saveState() { sortOffices(); memoryStore.setItem(STORAGE_KEY, JSON.stringify(state)); }

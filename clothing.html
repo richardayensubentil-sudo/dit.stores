@@ -9707,8 +9707,15 @@
               .slice(0, 2) || "AD";
 
         clothingConfig = loadClothingConfig();
-        loadData();
-        loadReceiveRecords();
+        window.neonStorage.ready().then(function() {
+          clothingConfig = loadClothingConfig();
+          loadData();
+          loadReceiveRecords();
+          initRankFilter();
+          updateClocDropdownOptions();
+          updateClocFilterOptions();
+          updateDeptFilterOptions();
+        });
         initRankFilter();
         updateClocDropdownOptions();
         updateClocFilterOptions();

@@ -1,87 +1,103 @@
 (function () {
   const API_ROOT = '/api/storage';
 
-  // In-memory cache, populated synchronously on page load
+  // In-memory cache — populated on page load, kept in sync on every write
   const values = Object.create(null);
   let loadError = null;
+  let loadPromise = null;
 
-  // Synchronous initial fetch — populates the cache before any page script runs
-  try {
-    const req = new XMLHttpRequest();
-    req.open('GET', API_ROOT, false); // false = synchronous
-    req.send();
-    if (req.status >= 200 && req.status < 300) {
-      Object.assign(values, JSON.parse(req.responseText || '{}'));
-    } else {
-      throw new Error('HTTP ' + req.status + ' from /api/storage');
-    }
-  } catch (err) {
-    loadError = err;
-    console.warn('[neon-storage] Initial load failed — will retry on first use:', err.message);
-  }
+  // ── Initial fetch (async, not synchronous) ─────────────────────────────────
+  // Using async fetch avoids the browser warning about synchronous XHR and
+  // is more reliable on Vercel cold starts (no timeout ceiling).
+  loadPromise = fetch(API_ROOT)
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status + ' from /api/storage');
+      return r.json();
+    })
+    .then(function (data) {
+      Object.assign(values, data);
+      loadError = null;
+    })
+    .catch(function (err) {
+      loadError = err;
+      console.warn('[neon-storage] Initial load failed:', err.message);
+    });
 
-  // Async helper for writes
-  function xhrAsync(method, url, body) {
-    return new Promise(function (resolve, reject) {
-      const xhr = new XMLHttpRequest();
-      xhr.open(method, url, true);
-      if (body !== undefined) xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.onload = function () {
-        if (xhr.status >= 200 && xhr.status < 300) resolve(xhr);
-        else reject(new Error('HTTP ' + xhr.status + ' — ' + xhr.responseText.slice(0, 200)));
-      };
-      xhr.onerror   = function () { reject(new Error('Network error')); };
-      xhr.ontimeout = function () { reject(new Error('Request timed out')); };
-      xhr.timeout   = 15000;
-      xhr.send(body !== undefined ? JSON.stringify(body) : null);
+  // ── HTTP helpers ───────────────────────────────────────────────────────────
+  function apiFetch(method, url, body) {
+    var opts = {
+      method: method,
+      headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
+      body:    body !== undefined ? JSON.stringify(body) : undefined,
+    };
+    return fetch(url, opts).then(function (r) {
+      if (!r.ok) return r.text().then(function (t) {
+        throw new Error('HTTP ' + r.status + ' — ' + t.slice(0, 200));
+      });
+      return r;
     });
   }
 
-  // Reload the full cache from the server (used as a fallback)
-  function reload() {
-    return xhrAsync('GET', API_ROOT).then(function (xhr) {
-      const fresh = JSON.parse(xhr.responseText || '{}');
-      // Merge fresh data into cache
-      Object.keys(fresh).forEach(function (k) { values[k] = fresh[k]; });
-      loadError = null; // clear the error — connection is working now
-    });
-  }
-
+  // ── Public API ─────────────────────────────────────────────────────────────
   window.neonStorage = {
-    // Returns cached value — if initial load failed, reloads first then returns
+
+    // Wait for the initial load before doing anything.
+    // All pages should call this once before reading data.
+    ready: function () { return loadPromise; },
+
+    // Synchronous read from cache.
+    // Returns null if key not found or if initial load failed.
     getItem: function (key) {
-      if (!loadError) {
-        return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : null;
-      }
-      // Initial load failed — reload and return value after
-      // (callers that need async should use getItemAsync)
-      throw loadError;
+      if (loadError) return null; // graceful: don't throw, let callers handle
+      return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : null;
     },
 
-    // Async version — safe to use when initial load may have failed
+    // Async read — waits for initial load if not done yet.
     getItemAsync: function (key) {
-      if (!loadError) {
-        return Promise.resolve(
-          Object.prototype.hasOwnProperty.call(values, key) ? values[key] : null
-        );
-      }
-      return reload().then(function () {
+      return loadPromise.then(function () {
         return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : null;
       });
     },
 
+    // Write to Neon AND update local cache immediately.
+    // Returns a Promise — callers should await or .then() it for reliability.
     setItem: function (key, value) {
-      const serialized = String(value);
-      return xhrAsync('PUT', API_ROOT + '/' + encodeURIComponent(key), { value: serialized })
-        .then(function () { values[key] = serialized; });
+      var serialized = String(value);
+      // Update cache immediately so subsequent getItem calls see the new value
+      values[key] = serialized;
+      return apiFetch('PUT', API_ROOT + '/' + encodeURIComponent(key), { value: serialized })
+        .catch(function (err) {
+          console.error('[neon-storage] setItem failed for "' + key + '":', err.message);
+          throw err;
+        });
     },
 
+    // Delete from Neon and remove from local cache.
+    // Returns a Promise.
     removeItem: function (key) {
-      return xhrAsync('DELETE', API_ROOT + '/' + encodeURIComponent(key))
-        .then(function () { delete values[key]; });
+      delete values[key];
+      return apiFetch('DELETE', API_ROOT + '/' + encodeURIComponent(key))
+        .catch(function (err) {
+          console.error('[neon-storage] removeItem failed for "' + key + '":', err.message);
+          throw err;
+        });
     },
 
-    // Expose reload so pages can prefetch after a failed initial load
-    reload: reload,
+    // Force reload the full cache from the server.
+    reload: function () {
+      loadPromise = apiFetch('GET', API_ROOT)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          // Clear and repopulate
+          Object.keys(values).forEach(function (k) { delete values[k]; });
+          Object.assign(values, data);
+          loadError = null;
+        })
+        .catch(function (err) {
+          loadError = err;
+          console.warn('[neon-storage] reload failed:', err.message);
+        });
+      return loadPromise;
+    },
   };
 })();
