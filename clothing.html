@@ -9706,7 +9706,7 @@
               .toUpperCase()
               .slice(0, 2) || "AD";
 
-        clothingConfig = loadClothingConfig();
+        // Wait for Neon data to load before initialising anything
         window.neonStorage.ready().then(function() {
           clothingConfig = loadClothingConfig();
           loadData();
@@ -9715,27 +9715,23 @@
           updateClocDropdownOptions();
           updateClocFilterOptions();
           updateDeptFilterOptions();
+
+          currentPrintMode = "nominal";
+          formPersonnelSvcNos.clear();
+          clearPersonnelSelection();
+          updatePrintBtnText();
+          updatePrintModeActiveStates();
+          updateSaveFormBtnVisibility();
+          updatePrintButtonState();
+
+          updateSizeFilterBadge();
+          updateFilterClearButtons();
+          updateFormLoadedBanner();
+          updateCancelPrintBtnVisibility();
+
+          document.querySelectorAll(".filter-select").forEach(updateFilterSelectStyle);
+          refresh();
         });
-        initRankFilter();
-        updateClocDropdownOptions();
-        updateClocFilterOptions();
-        updateDeptFilterOptions();
-
-        currentPrintMode = "nominal";
-        formPersonnelSvcNos.clear();
-        clearPersonnelSelection();
-        updatePrintBtnText();
-        updatePrintModeActiveStates();
-        updateSaveFormBtnVisibility();
-        updatePrintButtonState();
-
-        updateSizeFilterBadge();
-        updateFilterClearButtons();
-        updateFormLoadedBanner();
-        updateCancelPrintBtnVisibility();
-
-        document.querySelectorAll(".filter-select").forEach(updateFilterSelectStyle);
-        refresh();
       });
     </script>
   </body>
