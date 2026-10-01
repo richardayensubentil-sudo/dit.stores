@@ -243,6 +243,11 @@
 
       .footer{position:relative;margin-top:20px;margin-bottom:20px;color:var(--text-muted);font-size:0.8rem;opacity:0.6;z-index:2;}
       @media(max-width:600px){h1{font-size:2.2rem;}.container{padding:30px;width:95%;}.stat-box-group{width:100%;}.stat-box{flex:1;min-width:auto;}.section-card-body{padding:16px;}.admin-scroll-body{padding:0 16px 20px;}}
+      @media(max-width:480px){
+        /* Move admin button below the title on very small phones */
+        .admin-btn{position:static;display:block;margin:12px auto 0;width:max-content;}
+        body>*:first-child{padding-top:0;}
+      }
     </style>
     <link rel="stylesheet" href="responsive.css" />
   </head>
