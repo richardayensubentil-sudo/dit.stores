@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personnel Management</title>
+  <script>document.documentElement.removeAttribute('data-theme');</script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    .theme-toggle { display: none !important; }
+    :root {
+      --bg: #f8fafc;
+      --bg-secondary: #f1f5f9;
+      --fg: #0f172a;
+      --muted: #64748b;
+      --accent: #0891b2;
+      --accent-light: rgba(8, 145, 178, 0.1);
+      --accent-glow: rgba(8, 145, 178, 0.25);
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+    .main-wrapper { display: flex; flex-direction: column; min-height: 100vh; }
+    .main-content { flex: 1; width: 100%; display: flex; flex-direction: column; position: relative; }
+    .main-header { background: var(--card); padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 1rem; position: sticky; top: 0; z-index: 40; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+    @media(min-width: 768px) {
+      .main-header { flex-direction: row; justify-content: space-between; align-items: center; padding: 1rem 3rem; }
+    }
+    .content-area { padding: 2rem; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+    .horizontal-summary {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 1px 3px 0 rgba(0,0,0,0.05); flex-wrap: wrap; gap: 1.5rem;
+    }
+    .summary-total { font-size: 3rem; font-weight: 700; line-height: 1; color: var(--fg); cursor: pointer; transition: color 0.2s; }
+    .summary-total:hover { color: var(--accent); }
+    .summary-breakdown { display: flex; gap: 2.5rem; }
+    .breakdown-item { text-align: center; cursor: pointer; transition: opacity 0.2s; }
+    .breakdown-item:hover { opacity: 0.7; }
+    .breakdown-title { font-size: 0.75rem; color:var(--muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .breakdown-value { font-size: 1.5rem; font-weight: 700; color: var(--fg); transition: color 0.2s; }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .status-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.25rem;
+      display: flex; flex-direction: column; gap: 0.75rem;
+      cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden;
+    }
+    .status-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08); border-color: var(--accent); }
+    .status-card.active-filter { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 0 0 2px var(--accent-glow); }
+    .status-card-header { display: flex; align-items: center; gap: 0.75rem; }
+    .status-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .status-label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+    .status-count { font-size: 1.5rem; font-weight: 700; color: var(--fg); }
+    .table-container { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+    .table-scroll-wrapper { overflow-x: auto; width: 100%; }
+    .table-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    .search-wrapper { position: relative; width: 250px; }
+    .search-input { width: 100%; padding: 0.6rem 1rem 0.6rem 2.5rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; outline: none; transition: border 0.2s; }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+    .search-icon { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); color: var(--muted); width: 16px; height: 16px; pointer-events: none; }
+    .data-table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+    .data-table th { background: var(--bg); padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .data-table td { padding: 0.75rem 1rem; font-size: 0.9rem; border-bottom: 1px solid var(--border); color: var(--fg); vertical-align: middle; white-space: nowrap; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--bg-secondary); }
+    .data-table tfoot td { background: var(--bg-secondary); font-weight: 700; font-size: 0.85rem; padding: 0.75rem 1rem; border-top: 2px solid var(--border); }
+    .status-cell { text-align: center; cursor: pointer; transition: all 0.15s; height: 40px; width: 40px; }
+    .status-cell:hover { background-color: var(--bg-secondary); transform: scale(1.1); }
+    .status-cell.active { background-color: var(--accent-light); color: var(--accent); }
+    .status-cell.active::after { content: '✓'; font-weight: 900; }
+    .status-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+    .status-badge.present { background: #dcfce7; color: #166534; }
+    .status-badge.leave { background: #dbeafe; color: #1e40af; }
+    .status-badge.sick { background: #fee2e2; color: #991b1b; }
+    .status-badge.posted { background: #f3e8ff; color: #6b21a8; }
+    .status-badge.absent { background: #ffedd5; color: #9a3412; }
+    .status-badge.awol { background: #fecaca; color: #b91c1c; }
+    .status-badge.duty { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+    .status-badge.excuse { background: #fff1f2; color: #be123c; border: 1px solid #fda4af; }
+    .status-badge.attachment { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .status-badge.preops { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+    .status-badge.ops { background: #ffe4e6; color: #be123c; border: 1px solid #fda4af; }
+    .status-badge.course { background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
+    .status-badge.pass { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.625rem 1.25rem; border-radius: 8px; font-weight: 500; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; border: none; font-family: inherit; text-decoration: none; }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--accent); color: white; box-shadow: 0 2px 4px rgba(8, 145, 178, 0.2); }
+    .btn-primary:hover { background: #0e7490; transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid transparent; }
+    .btn-ghost:hover { background: var(--bg-secondary); color: var(--fg); border-color: var(--border); }
+    .action-btn { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 0.5rem; border-radius: 6px; transition: all 0.2s; }
+    .action-btn:hover { background: var(--bg-secondary); color: var(--accent); }
+    .floating-dropdown {
+      position: fixed; background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      min-width: 200px; z-index: 9999; overflow: hidden;
+      opacity: 0; pointer-events: none; transform: translateY(10px) scale(0.98);
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 300px; overflow-y: auto;
+    }
+    .floating-dropdown::-webkit-scrollbar { width: 4px; }
+    .floating-dropdown::-webkit-scrollbar-track { background: transparent; }
+    .floating-dropdown::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .floating-dropdown.open { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
+    .dropdown-item { padding: 0.5rem 0.75rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; font-weight: 500; color: var(--fg); cursor: pointer; transition: background 0.1s; line-height: 1.4; }
+    .dropdown-item:hover { background: var(--bg-secondary); }
+    .dropdown-item.danger { color: var(--danger); }
+    .dropdown-item.danger:hover { background: #fef2f2; }
+    .dropdown-divider { height: 1px; background: var(--border); margin: 0.25rem 0; }
+    .filter-bar { display: none; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding: 0.75rem 1rem; background: var(--card); border: 1px solid var(--border); border-radius: 10px; animation: fadeIn 0.2s ease; }
+    .filter-bar.visible { display: flex; }
+    .filter-tag { background: var(--accent-light); color: var(--accent); padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: flex-start; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; padding: 1rem; overflow-y: auto; }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal { background: var(--card); border-radius: 16px; width: 100%; max-width: 500px; margin: 1rem 0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); transform: translateY(20px) scale(0.98); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); max-height: 90vh; display: flex; flex-direction: column; }
+    .modal-overlay.active .modal { transform: translateY(0) scale(1); }
+    .modal-body { padding: 1.5rem; overflow-y: auto; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--fg); margin-bottom: 0.5rem; }
+    .form-input, .form-select { width: 100%; padding: 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.95rem; outline: none; transition: border 0.2s; }
+    .form-input:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 0.3px var(--accent-light); }
+    .input-group { position: relative; display: flex; align-items: center; }
+    .input-prefix { position: absolute; left: 0.75rem; color: var(--accent); font-weight: 600; font-size: 0.9rem; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+    .input-prefix.visible { opacity: 1; }
+    .has-prefix { padding-left: 3.5rem; }
+    .toast-container { position: fixed; top: 1.5rem; right: 1.5rem; z-index: 300; display: flex; flex-direction: column; gap: 0.75rem; pointer-events: none; }
+    .toast { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 0.75rem; min-width: 300px; animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: all; }
+    .toast-success { border-left: 4px solid var(--success); }
+    .toast-error { border-left: 4px solid var(--danger); }
+    .toast-info { border-left: 4px solid #3b82f6; }
+    .view-section { display: none; animation: fadeIn 0.3s ease; }
+    .view-section.active { display: block; }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 45; display: none; }
+    .overlay.active { display: block; }
+    .print-header, .print-summary { display: none; }
+    @media print {
+      @page { size: landscape; margin: 0.5cm; }
+      body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body::after { content: "Restricted"; position: fixed; left: 0; right: 0; bottom: 3mm; text-align: center; font-size: 9pt; font-weight: 700; letter-spacing: 1px; color: #000; z-index: 10; }
+      .main-header, .horizontal-summary, .status-grid, .filter-bar,
+      .toast-container, .floating-dropdown, .modal-overlay,
+      .overlay, .view-section:not(#parade), .table-header { display: none !important; }
+      .print-header, .print-summary { display: block; }
+      #parade { display: block !important; position: absolute; top: 0; left: 0; width: 100%; padding: 0; }
+      #parade .table-container { box-shadow: none; border: none; border-radius: 0; overflow: visible; }
+      #parade .table-scroll-wrapper { overflow: visible; }
+      .print-header { text-align: center; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 5px; }
+      .print-header h1 { font-size: 16pt; margin: 0; }
+      .print-header .print-date { display: none !important; }
+      .data-table { border: 1px solid #000; width: 100%; min-width: 0 !important; font-size: 9pt; }
+      .data-table th { border: 1px solid #000; background: #f0f0f0 !important; color: #000; padding: 2px 4px; }
+      .data-table td { border: 1px solid #000; color: #000; padding: 2px 4px; font-size: 9pt; }
+      .status-cell { display: table-cell !important; width: 20px; height: auto; text-align: center; padding: 0; }
+      .status-cell.active::after { content: '✓'; font-weight: 900; font-size: 10pt; }
+      .data-table tfoot { display: none; }
+      .print-summary { margin-top: 15px; border-top: 1px solid #000; padding-top: 10px; font-size: 10pt; }
+      .summary-row { display: flex; flex-wrap: wrap; gap: 15px; }
+      .summary-item { font-weight: 600; }
+      .summary-item span { font-weight: 400; margin-left: 4px; }
+    }
+    /* Nav Dropdown */
+    .nav-dropdown-wrap { position: relative; display: inline-block; }
+    .nav-toggle-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--accent); border: 1px solid var(--accent); border-radius: 8px; font-family: inherit; font-size: 0.875rem; font-weight: 600; color: #fff; cursor: pointer; transition: all 0.2s; }
+    .nav-toggle-btn:hover { background: #0e7490; border-color: #0e7490; color: #fff; }
+    .nav-dropdown-menu { position: absolute; top: calc(100% + 8px); left: 0; min-width: 210px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px -4px rgba(15,23,42,0.12); padding: 6px; z-index: 999; opacity: 0; visibility: hidden; transform: translateY(-6px); transition: all 0.18s ease; }
+    .nav-dropdown-wrap.open .nav-dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+    .nav-dropdown-profile { display: flex; align-items: center; gap: 10px; padding: 8px 10px 12px 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+    .nav-dropdown-avatar { width: 36px; height: 36px; border-radius: 8px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
+    .nav-dropdown-profile-name { font-weight: 700; font-size: 0.9rem; color: var(--fg); line-height: 1.2; }
+    .nav-dropdown-profile-role { font-size: 0.72rem; color: var(--muted); }
+    .nav-dropdown-item { display: flex; align-items: center; width: 100%; padding: 8px 12px; border-radius: 7px; font-family: inherit; font-size: 0.875rem; font-weight: 500; color: var(--fg); text-decoration: none; background: transparent; border: none; cursor: pointer; transition: background 0.15s; text-align: left; }
+    .nav-dropdown-item:hover { background: var(--bg-secondary); }
+    .nav-dropdown-item.active { background: var(--accent-light); color: var(--accent); font-weight: 700; }
+    .nav-dropdown-item.active::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-left: auto; flex-shrink: 0; }
+    .nav-dropdown-divider { height: 1px; background: var(--border); margin: 4px 4px; }
+    .nav-dropdown-item.logout { color: var(--danger); }
+    .nav-dropdown-item.logout:hover { background: #fee2e2; }
+    .module-background { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; background: radial-gradient(circle at 0% 0%, #e0e7ff 0%, #f8fafc 50%); }
+    .module-background canvas { width: 100%; height: 100%; display: block; }
+  </style>
+  <link rel="stylesheet" href="responsive.css" />
+</head>
+<body>
+  <script>try { if (!JSON.parse(sessionStorage.getItem('loggedInUser') || 'null')) window.location.replace('index.html'); } catch (e) { sessionStorage.clear(); window.location.replace('index.html'); }</script>
+  <div class="module-background" aria-hidden="true"><canvas id="moduleBgCanvas"></canvas></div>
+
+  <!-- Overlay -->
+  <div class="overlay" id="globalOverlay"></div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="main-wrapper">
+    <header class="main-header">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <div>
+          <div style="font-size:2rem; font-weight:700; color:var(--fg); line-height:1.2;">Personnel Management</div>
+          <div style="font-size:1rem; color:var(--muted);">Manage personnel records &amp; parade state</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem; background:var(--bg-secondary); border:1px solid var(--border); padding:0.5rem 0.75rem; border-radius:999px; font-size:0.85rem; color:var(--muted); white-space:nowrap;">
+          <span>Hi:</span>
+          <strong id="displayUsername" style="color:var(--fg);">Guest</strong>
+        </div>
+        <div class="nav-dropdown-wrap" id="navDropdownWrap">
+          <button type="button" class="nav-toggle-btn" id="navToggleBtn" onclick="toggleNavDropdown(event)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+            Navigate
+          </button>
+          <div class="nav-dropdown-menu" id="navDropdownMenu">
+            <div class="nav-dropdown-profile">
+              <div class="nav-dropdown-avatar" id="navDropdownAvatar">DIT</div>
+              <div>
+                <div class="nav-dropdown-profile-name" id="navDropdownName">Stores System</div>
+                <div class="nav-dropdown-profile-role" id="navDropdownRole">User</div>
+              </div>
+            </div>
+            <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
+            <a href="clothing.html" class="nav-dropdown-item">Clothing</a>
+            <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
+            <a href="pay-stores.html" class="nav-dropdown-item">Pay Stores</a>
+            <a href="jobscard.html" class="nav-dropdown-item">Jobs Card</a>
+            <a href="personnel.html" class="nav-dropdown-item active">Personnel</a>
+            <a href="reports.html" class="nav-dropdown-item">Reports</a>
+            <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display:none">Admin Panel</a>
+            <div class="nav-dropdown-divider"></div>
+            <button type="button" class="nav-dropdown-item logout" onclick="logoutUser()">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="content-area">
+
+        <!-- VIEW: PERSONNEL -->
+        <div id="personnel" class="view-section active">
+          <div class="horizontal-summary">
+            <div>
+              <div style="font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.25rem;">Total Personnel</div>
+              <div class="summary-total" onclick="clearFilter()" id="totalCount">0</div>
+            </div>
+            <div class="summary-breakdown">
+              <div class="breakdown-item" onclick="filterCategory('officer')">
+                <div class="breakdown-title">Officers</div>
+                <div class="breakdown-value" id="countOfficers">0</div>
+              </div>
+              <div class="breakdown-item" onclick="filterCategory('soldier')">
+                <div class="breakdown-title">Soldiers</div>
+                <div class="breakdown-value" id="countSoldiers">0</div>
+              </div>
+              <div class="breakdown-item" onclick="filterCategory('dce')">
+                <div class="breakdown-title">DCE Staff</div>
+                <div class="breakdown-value" id="countDCE">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="status-grid" id="statusGrid"></div>
+
+          <div class="filter-bar" id="filterBar">
+            <span class="filter-tag" id="filterTagText">Filter: Present</span>
+            <span style="font-size:0.85rem; color:var(--muted);">(<span id="filterCount">0</span> results)</span>
+            <button class="btn btn-ghost" style="margin-left:auto; padding:0.25rem 0.75rem; font-size:0.8rem;" onclick="clearFilter()">Clear Filter</button>
+          </div>
+
+          <div class="table-container">
+            <div class="table-header">
+              <div style="font-size:1.1rem; font-weight:600;">Personnel Roster</div>
+              <div style="display:flex; gap:0.75rem; align-items:center;">
+                <div class="search-wrapper">
+                  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="searchInput" class="search-input" placeholder="Search name, rank, no..." onkeyup="handleSearch()">
+                </div>
+                <button class="btn btn-ghost" onclick="switchView('parade')">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  Parade State
+                </button>
+                <input type="file" id="importFileInput" accept=".csv,text/csv,.xlsx,.xls" style="display:none" onchange="importPersonnelCSV(event)">
+                <button class="btn btn-ghost" onclick="document.getElementById('importFileInput').click()" title="Import personnel from CSV/Excel">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Import
+                </button>
+                <button class="btn btn-ghost" onclick="exportPersonnelExcel()" title="Export personnel to Excel">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export
+                </button>
+                <button class="btn btn-primary" onclick="openModal()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add Personnel
+                </button>
+              </div>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:50px;">SRL</th>
+                  <th>Svc No.</th>
+                  <th>Rank</th>
+                  <th>Name</th>
+                  <th>Sex</th>
+                  <th>Unit</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>User ID</th>
+                  <th style="text-align:center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="personnelTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- VIEW: PARADE STATE -->
+        <div id="parade" class="view-section">
+          <div class="print-header">
+            <h1>DIT Technical Cell - Daily Parade State</h1>
+            <div class="print-date" id="printDateDisplay"></div>
+          </div>
+          <div class="table-container">
+            <div class="table-header">
+              <div>
+                <div style="font-size:1.1rem; font-weight:600;">Daily Parade State</div>
+                <div style="font-size:0.85rem; color:var(--muted);">Posted personnel are excluded from Parade State.</div>
+              </div>
+              <div style="display:flex; gap:0.75rem;">
+                <button class="btn btn-ghost" onclick="window.print()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                  Print
+                </button>
+                <button class="btn btn-ghost" onclick="exportParadeToCSV()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export CSV
+                </button>
+                <button class="btn btn-primary" onclick="switchView('personnel')">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                  Back to List
+                </button>
+              </div>
+            </div>
+            <div class="table-scroll-wrapper">
+              <table class="data-table" style="min-width:1600px;">
+                <thead id="paradeTableHead"></thead>
+                <tbody id="paradeTableBody"></tbody>
+                <tfoot id="paradeTableFoot"></tfoot>
+              </table>
+            </div>
+          </div>
+          <div class="print-summary" id="printSummaryContainer"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Personnel Modal -->
+  <div class="modal-overlay" id="personnelModal">
+    <div class="modal">
+      <div class="modal-header" style="padding:1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:1.25rem; font-weight:600;" id="modalTitle">Add New Personnel</h3>
+        <button class="action-btn" onclick="closeModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="addPersonnelForm" onsubmit="submitForm(event)" style="padding:1.5rem;">
+        <input type="hidden" id="editId" value="">
+        <div class="form-group" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div>
+            <label class="form-label">Category</label>
+            <select id="inputCategory" class="form-select" onchange="checkPrefixLogic()">
+              <option value="Soldier">Soldier</option>
+              <option value="Officer">Officer</option>
+              <option value="DCS">DCS</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Service Number</label>
+            <div class="input-group">
+              <span class="input-prefix" id="prefixLabel">GH/</span>
+              <input type="text" id="inputNo" class="form-input" placeholder="Service Number" required>
+            </div>
+          </div>
+        </div>
+        <div class="form-group" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div>
+            <label class="form-label">Rank</label>
+            <select id="inputRank" class="form-select" onchange="checkPrefixLogic()" required></select>
+            <input type="text" id="inputCustomRank" class="form-input" placeholder="Enter rank" style="display:none; margin-top:0.5rem;" maxlength="50">
+          </div>
+          <div>
+            <label class="form-label">Unit</label>
+            <select id="inputArm" class="form-select" onchange="checkPrefixLogic()" required>
+              <option value="Army">Army</option>
+              <option value="Navy">Navy</option>
+              <option value="Air Force">Air Force</option>
+              <option value="DCE">DCE</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="display:grid; grid-template-columns:2fr 1fr; gap:1rem;">
+          <div>
+            <label class="form-label">Full Name</label>
+            <input type="text" id="inputName" class="form-input" placeholder="Full Name" required>
+          </div>
+          <div>
+            <label class="form-label">Sex</label>
+            <select id="inputSex" class="form-select" required>
+              <option value="M">M</option>
+              <option value="F">F</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current Location / Unit</label>
+          <input type="text" id="inputLoc" class="form-input" placeholder="e.g. DIT Workshop" required>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:2rem;">
+          <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Personnel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Floating Context Menu -->
+  <div class="floating-dropdown" id="actionDropdown"></div>
+
+  <script src="neon-storage.js"></script>
+  <script>
+    /* =====================================================
+       NEON STORAGE — single source of truth for persistence
+       ===================================================== */
+    const memoryStore = window.neonStorage;
+
+    /* =====================================================
+       CONSTANTS
+       ===================================================== */
+    const PERSONNEL_KEY = 'dit_personnel_data';
+    const ACTIVITY_LOG_KEY = 'dit_activity_log_v1';
+
+    const OFFICER_RANKS = ['GEN','COL','CMDR','WG CMDR','LT COL','SQN LDR','MAJ','LT CMDR','LT GN','CAPT','SUB LT','LT','2LT','A/SUB LT'];
+    const SOLDIER_RANKS = ['SWOI','SWOII','WOI','CPOI','WOII','CPOII','S/SGT','POI','SGT','F/SGT','POII','CPL','LS','ABI','ABII','LAC','L/CPL','PTE','OS'];
+    const CUSTOM_RANK_VALUE = '__custom__';
+
+    const RANK_ORDER = {
+      'GEN':1,'COL':2,'CMDR':3,'WG CMDR':4,'LT COL':5,'SQN LDR':6,'MAJ':7,'LT CMDR':8,'LT GN':9,
+      'CAPT':10,'SUB LT':11,'LT':12,'2LT':13,'A/SUB LT':14,
+      'SWOI':15,'SWOII':16,'WOI':17,'CPOI':18,'WOII':19,'CPOII':20,'S/SGT':21,'POI':22,
+      'SGT':23,'F/SGT':24,'POII':25,'CPL':26,'LS':27,'ABI':28,'ABII':29,'LAC':30,'L/CPL':31,'PTE':32,'OS':33
+    };
+
+    const STATUS_CONFIG = [
+      { label:'Present',     value:'Present',     class:'present',    color:'#10b981' },
+      { label:'Absent',      value:'Absent',      class:'absent',     color:'#f97316' },
+      { label:'Sick',        value:'Sick',        class:'sick',       color:'#ef4444' },
+      { label:'Leave',       value:'Leave',       class:'leave',      color:'#3b82f6' },
+      { label:'Duty',        value:'Duty',        class:'duty',       color:'#22c55e' },
+      { label:'Duty-off',    value:'Duty-off',    class:'present',    color:'#cbd5e1' },
+      { label:'Excuse Duty', value:'Excuse Duty', class:'excuse',     color:'#f43f5e' },
+      { label:'AWOL',        value:'AWOL',        class:'awol',       color:'#dc2626' },
+      { label:'Attachment',  value:'Attachment',  class:'attachment', color:'#0ea5e9' },
+      { label:'Course',      value:'Course',      class:'course',     color:'#4338ca' },
+      { label:'Ops',         value:'Ops',         class:'ops',        color:'#be123c' },
+      { label:'Pre-ops',     value:'Pre-ops',     class:'preops',     color:'#c2410c' },
+      { label:'Pass',        value:'Pass',        class:'pass',       color:'#64748b' },
+      { label:'Posted',      value:'Posted',      class:'posted',     color:'#a855f7' }
+    ];
+
+    const PARADE_COLUMNS = STATUS_CONFIG.filter(s => s.value !== 'Posted');
+
+    const ICONS = {
+      'Absent':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>',
+      'AWOL':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      'Attachment':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>',
+      'Course':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>',
+      'Duty':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>',
+      'Duty-off':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+      'Excuse Duty':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+      'Ops':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>',
+      'Leave':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      'Posted':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+      'Pre-ops':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+      'Pass':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+      'Present':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+      'Sick':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
+    };
+
+    /* =====================================================
+       STATE
+       ===================================================== */
+    let personnel = [];
+    let currentFilter = null;
+    let activeRowId = null;
+    let searchQuery = '';
+
+    /* =====================================================
+       INIT
+       ===================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      updateLoggedInUserDisplay();
+
+      // Access Control
+      var _loginUser = null;
+      try { _loginUser = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null'); } catch(e) {}
+      if (!_loginUser) { window.location.href = 'index.html'; return; }
+      var _isAdmin = _loginUser.role === 'Admin' || _loginUser.role === 'Administrator';
+      var _mods = _loginUser.modules || {};
+      var _persPriv = _mods.personnel || {};
+      if (!_isAdmin && !_persPriv.view) { window.location.href = 'dashboard.html'; return; }
+
+      loadData();
+      initRankSelect();
+      renderStatusGrid();
+      renderTable();
+    });
+
+    function getCurrentUserId() {
+      try {
+        var u = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null');
+        return u ? (u.username || u.email || u.fullName || 'Unknown user') : 'Unknown user';
+      } catch(e) { return 'Unknown user'; }
+    }
+
+    function updateLoggedInUserDisplay() {
+      var loginUser = null;
+      try { loginUser = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null'); } catch(e) {}
+      var name = (loginUser && (loginUser.fullName || loginUser.username || loginUser.email)) || 'Guest';
+      var displayEl = document.getElementById('displayUsername');
+      if (displayEl) displayEl.textContent = name;
+      var navNameEl = document.getElementById('navDropdownName');
+      if (navNameEl) navNameEl.textContent = name;
+    }
+
+    /* =====================================================
+       DATA (neonStorage instead of localStorage)
+       ===================================================== */
+    function loadData() {
+      try {
+        var raw = memoryStore.getItem(PERSONNEL_KEY);
+        if (raw) {
+          personnel = JSON.parse(raw).map(function(p) {
+            return Object.assign({ userId: getCurrentUserId() }, p);
+          });
+        } else {
+          personnel = [];
+          saveData();
+        }
+      } catch(e) {
+        personnel = [];
+      }
+    }
+
+    function saveData() {
+      try {
+        memoryStore.setItem(PERSONNEL_KEY, JSON.stringify(personnel));
+      } catch(e) {
+        showToast('error', 'Could not save data. Storage error.');
+      }
+    }
+
+    function logActivity(action, detail) {
+      try {
+        var u = null;
+        try { u = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null'); } catch(e) {}
+        var user = u ? (u.username || u.fullName || u.email || 'Unknown user') : 'Unknown user';
+        var log = [];
+        try {
+          var raw = memoryStore.getItem(ACTIVITY_LOG_KEY);
+          log = raw ? JSON.parse(raw) : [];
+        } catch(e) {}
+        log.unshift({ module: 'personnel', action: action, detail: detail, user: user, date: new Date().toISOString() });
+        if (log.length > 500) log = log.slice(0, 500);
+        memoryStore.setItem(ACTIVITY_LOG_KEY, JSON.stringify(log));
+      } catch(e) {}
+    }
+
+    /* =====================================================
+       SORTING & RENDERING
+       ===================================================== */
+    function comparePersonnelTableOrder(a, b) {
+      var rankDiff = (RANK_ORDER[a.rank] || 99) - (RANK_ORDER[b.rank] || 99);
+      if (rankDiff !== 0) return rankDiff;
+      var svcDiff = String(a.no || '').localeCompare(String(b.no || ''), undefined, { numeric: true });
+      if (svcDiff !== 0) return svcDiff;
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    }
+
+    function initRankSelect() {
+      var category = document.getElementById('inputCategory').value || 'Soldier';
+      var select = document.getElementById('inputRank');
+      var ranks = category === 'Officer' ? OFFICER_RANKS : (category === 'Soldier' ? SOLDIER_RANKS : ['N/A']);
+      select.innerHTML = '';
+      var ph = document.createElement('option');
+      ph.value = ''; ph.textContent = category === 'DCS' ? 'N/A' : 'Select Rank';
+      select.appendChild(ph);
+      ranks.forEach(function(r) {
+        var opt = document.createElement('option'); opt.value = r; opt.textContent = r;
+        select.appendChild(opt);
+      });
+      if (category !== 'DCS') {
+        var customOpt = document.createElement('option');
+        customOpt.value = CUSTOM_RANK_VALUE; customOpt.textContent = 'Other (enter rank)';
+        select.appendChild(customOpt);
+      }
+      select.value = category === 'DCS' ? 'N/A' : (ranks[0] || '');
+    }
+
+    function hexToRgba(hex, alpha) {
+      var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+      return 'rgba('+r+','+g+','+b+','+alpha+')';
+    }
+
+    function renderStatusGrid() {
+      var grid = document.getElementById('statusGrid');
+      grid.innerHTML = '';
+      var sorted = STATUS_CONFIG.slice().sort(function(a,b){ return a.label.localeCompare(b.label); });
+      sorted.forEach(function(status) {
+        var count = personnel.filter(function(p){ return p.status === status.value; }).length;
+        var card = document.createElement('div');
+        card.className = 'status-card';
+        card.onclick = function(){ filterStatus(status.value); };
+        card.id = 'card-' + status.value;
+        card.innerHTML = '<div class="status-card-header"><div class="status-icon" style="background:'+hexToRgba(status.color,0.1)+';color:'+status.color+';">'+(ICONS[status.label]||'')+'</div><span class="status-label">'+status.label+'</span></div><div class="status-count" id="status'+status.label.replace(/ /g,'')+'">'+count+'</div>';
+        grid.appendChild(card);
+      });
+    }
+
+    function renderTable() {
+      var tbody = document.getElementById('personnelTableBody');
+      tbody.innerHTML = '';
+      var displayData = personnel.filter(function(p) {
+        var matchesFilter = true;
+        if (p.status === 'Posted') {
+          if (!currentFilter) matchesFilter = false;
+          else if (currentFilter.type === 'status' && currentFilter.value !== 'Posted') matchesFilter = false;
+          else if (currentFilter.type === 'category') matchesFilter = false;
+        }
+        if (currentFilter) {
+          if (currentFilter.type === 'status') matchesFilter = (p.status === currentFilter.value);
+          if (currentFilter.type === 'category') {
+            if (currentFilter.value === 'officer') matchesFilter = OFFICER_RANKS.includes(p.rank) && p.arm !== 'DCE';
+            if (currentFilter.value === 'soldier') matchesFilter = !OFFICER_RANKS.includes(p.rank) && p.arm !== 'DCE';
+            if (currentFilter.value === 'dce') matchesFilter = p.arm === 'DCE';
+          }
+        }
+        var matchesSearch = true;
+        if (searchQuery) {
+          var q = searchQuery.toLowerCase();
+          matchesSearch = p.name.toLowerCase().includes(q) || p.no.toLowerCase().includes(q) || p.rank.toLowerCase().includes(q);
+        }
+        return matchesFilter && matchesSearch;
+      });
+      displayData.sort(comparePersonnelTableOrder);
+      if (displayData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:3rem;color:var(--muted);background:var(--bg-secondary);">No personnel found.</td></tr>';
+      } else {
+        displayData.forEach(function(p, index) {
+          var tr = document.createElement('tr');
+          var userId = p.userId || getCurrentUserId();
+          tr.innerHTML = '<td style="color:var(--muted);font-size:0.8rem;">'+(index+1)+'</td><td style="font-weight:600;">'+p.no+'</td><td>'+p.rank+'</td><td>'+p.name+'</td><td>'+(p.sex||'-')+'</td><td>'+p.arm+'</td><td style="color:var(--muted);">'+p.loc+'</td><td>'+getStatusBadge(p.status)+'</td><td style="font-family:monospace;color:var(--muted);">'+userId+'</td><td style="text-align:center;"><button class="action-btn" onclick="openActionMenu(event,'+p.id+')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></td>';
+          tbody.appendChild(tr);
+        });
+      }
+      updateStats();
+      updateFilterBar(displayData.length);
+    }
+
+    function getStatusBadge(status) {
+      var config = STATUS_CONFIG.find(function(s){ return s.value === status; }) || STATUS_CONFIG[0];
+      return '<span class="status-badge '+config.class+'">'+config.label+'</span>';
+    }
+
+    function updateStats() {
+      var active = personnel.filter(function(p){ return p.status !== 'Posted'; });
+      document.getElementById('totalCount').textContent = active.length;
+      STATUS_CONFIG.forEach(function(s) {
+        var count = personnel.filter(function(p){ return p.status === s.value; }).length;
+        var el = document.getElementById('status'+s.label.replace(/ /g,''));
+        if (el) el.textContent = count;
+      });
+      document.getElementById('countOfficers').textContent = active.filter(function(p){ return OFFICER_RANKS.includes(p.rank) && p.arm !== 'DCE'; }).length;
+      document.getElementById('countSoldiers').textContent = active.filter(function(p){ return !OFFICER_RANKS.includes(p.rank) && p.arm !== 'DCE'; }).length;
+      document.getElementById('countDCE').textContent = active.filter(function(p){ return p.arm === 'DCE'; }).length;
+    }
+
+    function updateFilterBar(count) {
+      var bar = document.getElementById('filterBar');
+      var tag = document.getElementById('filterTagText');
+      var countSpan = document.getElementById('filterCount');
+      document.querySelectorAll('.status-card').forEach(function(c){ c.classList.remove('active-filter'); });
+      if (currentFilter) {
+        bar.classList.add('visible');
+        tag.textContent = 'Filter: ' + currentFilter.value;
+        countSpan.textContent = count;
+        if (currentFilter.type === 'status') {
+          var card = document.getElementById('card-' + currentFilter.value);
+          if (card) card.classList.add('active-filter');
+        }
+      } else {
+        bar.classList.remove('visible');
+      }
+    }
+
+    /* =====================================================
+       PARADE STATE
+       ===================================================== */
+    function renderParadeTable() {
+      var thead = document.getElementById('paradeTableHead');
+      var tbody = document.getElementById('paradeTableBody');
+      var tfoot = document.getElementById('paradeTableFoot');
+      var now = new Date();
+      document.getElementById('printDateDisplay').textContent = 'Date: ' + now.toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
+      thead.innerHTML = '<tr><th>SRL</th><th>SVC NO.</th><th>RANK</th><th>NAME</th>' + PARADE_COLUMNS.map(function(s){ return '<th>'+s.label+'</th>'; }).join('') + '</tr>';
+      tbody.innerHTML = '';
+      var sorted = personnel.slice().sort(comparePersonnelTableOrder).filter(function(p){ return p.status !== 'Posted'; });
+      var counts = {}; PARADE_COLUMNS.forEach(function(s){ counts[s.value] = 0; });
+      sorted.forEach(function(p, index) {
+        if (counts[p.status] !== undefined) counts[p.status]++;
+        var tr = document.createElement('tr');
+        var html = '<td>'+(index+1)+'</td><td style="font-weight:600;">'+p.no+'</td><td>'+p.rank+'</td><td>'+p.name+'</td>';
+        PARADE_COLUMNS.forEach(function(s) {
+          var isActive = p.status === s.value;
+          html += '<td class="status-cell'+(isActive?' active':'')+'" onclick="updateParadeStatus('+p.id+',\''+s.value+'\')" title="Mark '+s.label+'"></td>';
+        });
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+      });
+      tfoot.innerHTML = '<tr><td colspan="4">NO. ON ROLL = '+sorted.length+'</td>' + PARADE_COLUMNS.map(function(s){ return '<td style="text-align:center;">'+counts[s.value]+'</td>'; }).join('') + '</tr>';
+      var summaryEl = document.getElementById('printSummaryContainer');
+      summaryEl.innerHTML = '<div class="summary-row">' + PARADE_COLUMNS.map(function(s){ return '<div class="summary-item">'+s.label+' = <span>'+counts[s.value]+'</span></div>'; }).join('') + '</div>';
+    }
+
+    function updateParadeStatus(id, newStatus) {
+      var p = personnel.find(function(x){ return x.id === id; });
+      if (p) {
+        var oldStatus = p.status;
+        p.status = newStatus;
+        saveData();
+        renderParadeTable();
+        renderTable();
+        renderStatusGrid();
+        logActivity('Parade status changed', p.rank + ' ' + p.name + ' (' + p.no + '): ' + oldStatus + ' \u2192 ' + newStatus);
+        showToast('info', p.name + ': ' + oldStatus + ' \u2192 ' + newStatus);
+      }
+    }
+
+    function exportParadeToCSV() {
+      var sorted = personnel.slice().sort(comparePersonnelTableOrder).filter(function(p){ return p.status !== 'Posted'; });
+      var counts = {}; PARADE_COLUMNS.forEach(function(s){ counts[s.value] = 0; });
+      sorted.forEach(function(p){ if (counts[p.status] !== undefined) counts[p.status]++; });
+      var header = ['SRL','SVC NO.','RANK','NAME'].concat(PARADE_COLUMNS.map(function(s){ return s.label; }));
+      var csv = header.join(',') + '\n';
+      sorted.forEach(function(p, index) {
+        var row = [index+1, p.no, p.rank, '"'+p.name+'"'].concat(PARADE_COLUMNS.map(function(s){ return p.status===s.value?'X':''; }));
+        csv += row.join(',') + '\n';
+      });
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'parade_state_'+new Date().toISOString().slice(0,10)+'.csv';
+      link.click();
+      showToast('success', 'CSV downloaded');
+    }
+
+    /* =====================================================
+       IMPORT / EXPORT
+       ===================================================== */
+    function exportPersonnelExcel() {
+      if (typeof XLSX === 'undefined') { showToast('error', 'Excel library unavailable'); return; }
+      var sorted = personnel.slice().sort(comparePersonnelTableOrder);
+      var rows = sorted.map(function(p, i) {
+        return { SRL:i+1, 'SVC NO.':p.no, RANK:p.rank, NAME:p.name, SEX:p.sex||'', UNIT:p.arm, LOCATION:p.loc, STATUS:p.status };
+      });
+      var ws = XLSX.utils.json_to_sheet(rows);
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Personnel');
+      XLSX.writeFile(wb, 'personnel_'+new Date().toISOString().slice(0,10)+'.xlsx');
+      showToast('success', 'Exported ' + sorted.length + ' personnel to Excel');
+    }
+
+    function parseCSV(text) {
+      var rows = [], row = [], field = '', inQuotes = false;
+      text = text.replace(/^\uFEFF/, '');
+      for (var i = 0; i < text.length; i++) {
+        var c = text[i];
+        if (inQuotes) {
+          if (c === '"' && text[i+1] === '"') { field += '"'; i++; }
+          else if (c === '"') inQuotes = false;
+          else field += c;
+        } else if (c === '"') inQuotes = true;
+        else if (c === ',') { row.push(field); field = ''; }
+        else if (c === '\n' || c === '\r') {
+          if (c === '\r' && text[i+1] === '\n') i++;
+          row.push(field); field = '';
+          if (row.some(function(x){ return x.trim() !== ''; })) rows.push(row);
+          row = [];
+        } else field += c;
+      }
+      row.push(field);
+      if (row.some(function(x){ return x.trim() !== ''; })) rows.push(row);
+      return rows;
+    }
+
+    function importPersonnelCSV(event) {
+      var file = event.target.files[0];
+      event.target.value = '';
+      if (!file) return;
+      var ext = file.name.split('.').pop().toLowerCase();
+      if (['xlsx','xls'].includes(ext)) {
+        if (typeof XLSX === 'undefined') { showToast('error','Excel library unavailable'); return; }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            var wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
+            var ws = wb.Sheets[wb.SheetNames[0]];
+            var rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+            processImportRows(rows);
+          } catch(err) { showToast('error','Import failed: check the file format'); }
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        var reader2 = new FileReader();
+        reader2.onload = function(e) {
+          try {
+            var rows = parseCSV(e.target.result);
+            processImportRows(rows);
+          } catch(err) { showToast('error','Import failed: check the CSV format'); }
+        };
+        reader2.readAsText(file);
+      }
+    }
+
+    function processImportRows(rows) {
+      if (rows.length < 2) { showToast('error','No data found in file'); return; }
+      var header = rows[0].map(function(h){ return String(h).trim().toUpperCase(); });
+      var col = function() { var names = Array.from(arguments); return header.findIndex(function(h){ return names.includes(h); }); };
+      var idx = {
+        no: col('SVC NO.','SVC NO','SERVICE NO.','SERVICE NO','NO'),
+        rank: col('RANK'), name: col('NAME'), sex: col('SEX'),
+        arm: col('UNIT','ARM'), loc: col('LOCATION','LOC'), status: col('STATUS')
+      };
+      if (idx.no < 0 || idx.name < 0) { showToast('error','Missing SVC NO. or NAME column'); return; }
+      var validStatuses = STATUS_CONFIG.map(function(s){ return s.value; });
+      var added = 0, updated = 0;
+      rows.slice(1).forEach(function(r, i) {
+        var get = function(k){ return idx[k] >= 0 ? String(r[idx[k]]||'').trim() : ''; };
+        var no = get('no'), name = get('name');
+        if (!no || !name) return;
+        var sex = get('sex').toUpperCase().charAt(0);
+        if (sex !== 'M' && sex !== 'F') sex = '';
+        var statusRaw = get('status');
+        var status = validStatuses.find(function(v){ return v.toLowerCase() === statusRaw.toLowerCase(); }) || 'Present';
+        var rec = { no:no, rank:get('rank'), name:name, sex:sex, arm:get('arm')||'Army', loc:get('loc'), status:status };
+        var existing = personnel.find(function(p){ return p.no === no; });
+        if (existing) { Object.assign(existing, rec); updated++; }
+        else { personnel.push(Object.assign({ id:Date.now()+i, userId:getCurrentUserId() }, rec)); added++; }
+      });
+      saveData(); renderTable(); renderStatusGrid();
+      showToast('success', 'Import complete: ' + added + ' added, ' + updated + ' updated');
+    }
+
+    /* =====================================================
+       FILTERS
+       ===================================================== */
+    function handleSearch() { searchQuery = document.getElementById('searchInput').value; renderTable(); }
+    function filterStatus(status) {
+      if (currentFilter && currentFilter.type === 'status' && currentFilter.value === status) clearFilter();
+      else { currentFilter = { type:'status', value:status }; renderTable(); }
+    }
+    function filterCategory(cat) {
+      if (currentFilter && currentFilter.type === 'category' && currentFilter.value === cat) clearFilter();
+      else { currentFilter = { type:'category', value:cat }; renderTable(); }
+    }
+    function clearFilter() { currentFilter = null; document.getElementById('searchInput').value = ''; searchQuery = ''; renderTable(); }
+
+    /* =====================================================
+       ACTION MENU
+       ===================================================== */
+    function openActionMenu(event, id) {
+      event.stopPropagation();
+      activeRowId = id;
+      var menu = document.getElementById('actionDropdown');
+      var btn = event.currentTarget;
+      var rect = btn.getBoundingClientRect();
+      var p = personnel.find(function(x){ return x.id === id; });
+      var editIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+      var deleteIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+      var sortedStatus = STATUS_CONFIG.slice().sort(function(a,b){ return a.label.localeCompare(b.label); });
+      var itemsHTML = '<div class="dropdown-item" onclick="handleRowAction(\'edit\')">'+editIcon+' Edit Details</div><div class="dropdown-divider"></div>';
+      sortedStatus.forEach(function(s) {
+        itemsHTML += '<div class="dropdown-item" onclick="handleRowAction(\''+s.value+'\')">' +
+          '<span style="color:'+s.color+';width:20px;display:flex;align-items:center;justify-content:center;">'+(ICONS[s.label]||'')+'</span>' +
+          s.label + '</div>';
+      });
+      itemsHTML += '<div class="dropdown-divider"></div><div class="dropdown-item danger" onclick="handleRowAction(\'delete\')">'+deleteIcon+' Delete Personnel</div>';
+      menu.innerHTML = itemsHTML;
+      menu.style.display = 'block';
+      var menuHeight = menu.offsetHeight;
+      var top = rect.bottom + 5;
+      var left = rect.right;
+      if (top + menuHeight > window.innerHeight) top = rect.top - menuHeight - 5;
+      if (left + 220 > window.innerWidth) left = rect.left - 220;
+      if (top < 10) top = 10;
+      if (left < 10) left = 10;
+      menu.style.top = top + 'px';
+      menu.style.left = left + 'px';
+      setTimeout(function(){ menu.classList.add('open'); }, 10);
+    }
+
+    function closeActionMenu() {
+      var menu = document.getElementById('actionDropdown');
+      menu.classList.remove('open');
+      setTimeout(function(){ if (!menu.classList.contains('open')) menu.style.display = ''; }, 150);
+      activeRowId = null;
+    }
+
+    function handleRowAction(action) {
+      var id = activeRowId;
+      closeActionMenu();
+      var index = personnel.findIndex(function(p){ return p.id === id; });
+      if (index === -1) return;
+      var p = personnel[index];
+      if (action === 'delete') {
+        showConfirm(
+          'Remove Personnel',
+          'Are you sure you want to remove ' + p.rank + ' ' + p.name + ' (' + p.no + ')? This cannot be undone.',
+          'Remove',
+          function() {
+            personnel.splice(index, 1);
+            saveData(); renderTable(); renderStatusGrid();
+            logActivity('Personnel removed', p.rank + ' ' + p.name + ' (' + p.no + ')');
+            showToast('success', p.name + ' removed');
+          }
+        );
+      } else if (action === 'edit') {
+        openModal(true, p);
+      } else {
+        var oldStatus = p.status;
+        p.status = action;
+        saveData(); renderTable(); renderStatusGrid();
+        logActivity('Status changed', p.rank + ' ' + p.name + ' (' + p.no + '): ' + oldStatus + ' \u2192 ' + action);
+        showToast('info', p.name + ': ' + action);
+      }
+    }
+
+    /* =====================================================
+       MODAL
+       ===================================================== */
+    function openModal(isEdit, data) {
+      isEdit = !!isEdit; data = data || null;
+      document.getElementById('addPersonnelForm').reset();
+      document.getElementById('modalTitle').textContent = isEdit ? 'Edit Personnel' : 'Add New Personnel';
+      document.getElementById('editId').value = isEdit ? data.id : '';
+      if (isEdit && data) {
+        var category = data.arm === 'DCE' ? 'DCS' : (OFFICER_RANKS.includes(data.rank) ? 'Officer' : 'Soldier');
+        document.getElementById('inputCategory').value = category;
+        document.getElementById('inputNo').value = data.no.replace('GH/', '');
+        document.getElementById('inputArm').value = data.arm;
+        document.getElementById('inputName').value = data.name;
+        document.getElementById('inputSex').value = data.sex || 'M';
+        document.getElementById('inputLoc').value = data.loc;
+      } else {
+        document.getElementById('inputCategory').value = 'Soldier';
+      }
+      checkPrefixLogic();
+      if (isEdit && data) {
+        var rankSelect = document.getElementById('inputRank');
+        var availableRanks = data.arm === 'DCE' ? ['N/A'] : (OFFICER_RANKS.includes(data.rank) ? OFFICER_RANKS : SOLDIER_RANKS);
+        if (availableRanks.includes(data.rank)) {
+          rankSelect.value = data.rank;
+        } else if (data.arm !== 'DCE') {
+          rankSelect.value = CUSTOM_RANK_VALUE;
+          document.getElementById('inputCustomRank').value = data.rank;
+          checkPrefixLogic();
+        }
+      }
+      document.getElementById('personnelModal').classList.add('active');
+      document.getElementById('globalOverlay').classList.add('active');
+      setTimeout(function(){ document.getElementById('inputCategory').focus(); }, 100);
+    }
+
+    function closeModal() {
+      document.getElementById('personnelModal').classList.remove('active');
+      document.getElementById('globalOverlay').classList.remove('active');
+    }
+
+    function checkPrefixLogic() {
+      var category = document.getElementById('inputCategory').value;
+      var prefixEl = document.getElementById('prefixLabel');
+      var inputEl = document.getElementById('inputNo');
+      var rankEl = document.getElementById('inputRank');
+      var customRankEl = document.getElementById('inputCustomRank');
+      var currentRank = rankEl ? rankEl.value : '';
+      if (category === 'Officer') { prefixEl.classList.add('visible'); inputEl.classList.add('has-prefix'); }
+      else { prefixEl.classList.remove('visible'); inputEl.classList.remove('has-prefix'); }
+      if (!rankEl) return;
+      var availableRanks = category === 'Officer' ? OFFICER_RANKS : (category === 'Soldier' ? SOLDIER_RANKS : ['N/A']);
+      var keepCustom = category !== 'DCS' && (currentRank === CUSTOM_RANK_VALUE || (currentRank && !availableRanks.includes(currentRank)));
+      rankEl.innerHTML = '';
+      var ph = document.createElement('option');
+      ph.value = ''; ph.textContent = category === 'DCS' ? 'N/A' : 'Select Rank';
+      rankEl.appendChild(ph);
+      availableRanks.forEach(function(r) {
+        var opt = document.createElement('option'); opt.value = r; opt.textContent = r;
+        rankEl.appendChild(opt);
+      });
+      if (category !== 'DCS') {
+        var customOpt = document.createElement('option');
+        customOpt.value = CUSTOM_RANK_VALUE; customOpt.textContent = 'Other (enter rank)';
+        rankEl.appendChild(customOpt);
+      }
+      if (category === 'DCS') {
+        rankEl.value = 'N/A';
+        customRankEl.value = ''; customRankEl.style.display = 'none'; customRankEl.required = false;
+      } else if (keepCustom) {
+        rankEl.value = CUSTOM_RANK_VALUE;
+        customRankEl.style.display = 'block'; customRankEl.required = true;
+      } else if (currentRank && availableRanks.includes(currentRank)) {
+        rankEl.value = currentRank;
+        customRankEl.style.display = 'none'; customRankEl.required = false;
+      } else {
+        rankEl.value = availableRanks[0] || '';
+        customRankEl.style.display = 'none'; customRankEl.required = false;
+      }
+    }
+
+    document.getElementById('inputRank').addEventListener('change', function() {
+      var customRankEl = document.getElementById('inputCustomRank');
+      if (this.value === CUSTOM_RANK_VALUE) {
+        customRankEl.style.display = 'block'; customRankEl.required = true;
+      } else {
+        customRankEl.style.display = 'none'; customRankEl.required = false; customRankEl.value = '';
+      }
+    });
+
+    function submitForm(e) {
+      e.preventDefault();
+      var editId = document.getElementById('editId').value;
+      var no = document.getElementById('inputNo').value;
+      var rankValue = document.getElementById('inputRank').value;
+      var customRank = document.getElementById('inputCustomRank').value.trim();
+      var rank = rankValue === CUSTOM_RANK_VALUE ? customRank : rankValue;
+      var arm = document.getElementById('inputArm').value;
+      var name = document.getElementById('inputName').value;
+      var sex = document.getElementById('inputSex').value;
+      var loc = document.getElementById('inputLoc').value;
+      var category = document.getElementById('inputCategory').value;
+      var isOfficer = category === 'Officer';
+      var finalNo = isOfficer ? 'GH/' + no : no;
+      if (!rank) { showToast('error', 'Enter a rank before saving'); return; }
+      var currentUserId = getCurrentUserId();
+      if (editId) {
+        var index = personnel.findIndex(function(p){ return p.id == editId; });
+        if (index !== -1) {
+          personnel[index] = Object.assign({}, personnel[index], { no:finalNo, rank:rank, arm:arm, name:name, sex:sex, loc:loc, userId:currentUserId });
+          logActivity('Personnel updated', rank + ' ' + name + ' (' + finalNo + ') — ' + arm + ', ' + loc);
+          showToast('success', name + ' updated');
+        }
+      } else {
+        personnel.push({ id:Date.now(), no:finalNo, rank:rank, name:name, sex:sex, arm:arm, loc:loc, status:'Present', userId:currentUserId });
+        logActivity('Personnel added', rank + ' ' + name + ' (' + finalNo + ') — ' + arm + ', ' + loc);
+        showToast('success', name + ' added');
+      }
+      saveData(); closeModal(); renderTable(); renderStatusGrid();
+    }
+
+    /* =====================================================
+       VIEW SWITCHING
+       ===================================================== */
+    function switchView(viewId) {
+      document.querySelectorAll('.view-section').forEach(function(el){ el.classList.remove('active'); });
+      var target = document.getElementById(viewId);
+      if (target) target.classList.add('active');
+      if (viewId === 'parade') renderParadeTable();
+    }
+
+    /* =====================================================
+       PROFESSIONAL CONFIRM DIALOG
+       ===================================================== */
+    function showConfirm(title, message, okLabel, onConfirm) {
+      // Create overlay
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;animation:fadeIn 0.2s ease';
+      var box = document.createElement('div');
+      box.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:400px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,0.2);text-align:center;animation:slideIn 0.25s ease';
+      var icon = '<div style="width:52px;height:52px;border-radius:50%;background:#fee2e2;border:1px solid #fca5a5;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#ef4444"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>';
+      box.innerHTML = icon +
+        '<div style="font-size:1.1rem;font-weight:700;color:var(--fg);margin-bottom:8px">' + title + '</div>' +
+        '<div style="font-size:0.88rem;color:var(--muted);margin-bottom:22px;line-height:1.5">' + message + '</div>' +
+        '<div style="display:flex;gap:10px;justify-content:center">' +
+          '<button id="_confirmCancel" style="padding:10px 22px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--fg);font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer">Cancel</button>' +
+          '<button id="_confirmOk" style="padding:10px 22px;border-radius:8px;border:none;background:#ef4444;color:#fff;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer">' + (okLabel || 'Confirm') + '</button>' +
+        '</div>';
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+      function remove() { overlay.style.opacity='0'; overlay.style.transition='opacity 0.2s'; setTimeout(function(){ overlay.remove(); },200); }
+      document.getElementById('_confirmOk').onclick = function(){ remove(); if(onConfirm) onConfirm(); };
+      document.getElementById('_confirmCancel').onclick = remove;
+      overlay.addEventListener('click', function(e){ if(e.target===overlay) remove(); });
+    }
+
+    /* =====================================================
+       TOAST
+       ===================================================== */
+    function showToast(type, msg) {
+      var container = document.getElementById('toastContainer');
+      var toast = document.createElement('div');
+      toast.className = 'toast toast-' + type;
+      var icons = {
+        success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+        error: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+        info: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+      };
+      toast.innerHTML = (icons[type] || icons.info) + '<span>' + msg + '</span>';
+      container.appendChild(toast);
+      setTimeout(function() {
+        toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; toast.style.transition = 'all 0.3s ease';
+        setTimeout(function(){ toast.remove(); }, 300);
+      }, 3000);
+    }
+
+    /* =====================================================
+       NAV DROPDOWN
+       ===================================================== */
+    function toggleNavDropdown(e) {
+      e.stopPropagation();
+      document.getElementById('navDropdownWrap').classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      var wrap = document.getElementById('navDropdownWrap');
+      if (wrap && !wrap.contains(e.target)) wrap.classList.remove('open');
+    });
+    function logoutUser() {
+      showConfirm(
+        'Confirm Logout',
+        'Are you sure you want to log out?',
+        'Logout',
+        function() {
+          try { sessionStorage.clear(); } catch(e) {}
+          window.location.href = 'index.html';
+        }
+      );
+    }
+    (function initNav() {
+      var u = null;
+      try { u = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null'); } catch(e) {}
+      if (!u) return;
+      var name = u.username || u.fullName || u.email || 'User';
+      var initials = name.split(' ').map(function(n){ return n[0]; }).join('').toUpperCase().slice(0,2) || 'U';
+      var nameEl = document.getElementById('navDropdownName');
+      var avatarEl = document.getElementById('navDropdownAvatar');
+      var roleEl = document.getElementById('navDropdownRole');
+      if (nameEl) nameEl.textContent = name;
+      if (avatarEl) avatarEl.textContent = initials;
+      if (roleEl) roleEl.textContent = u.role || 'User';
+      if ((u.role === 'Admin' || u.role === 'Administrator') && sessionStorage.getItem('isAdminSession') === 'true') {
+        var ap = document.getElementById('adminPanelNavItem');
+        if (ap) ap.style.display = 'flex';
+      }
+    })();
+
+    /* =====================================================
+       EVENT LISTENERS
+       ===================================================== */
+    document.getElementById('globalOverlay').addEventListener('click', function(){ closeModal(); closeActionMenu(); });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.action-btn') && !e.target.closest('.floating-dropdown')) closeActionMenu();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { closeModal(); closeActionMenu(); }
+    });
+  </script>
+  <script src="module-background.js"></script>
+</body>
+</html>

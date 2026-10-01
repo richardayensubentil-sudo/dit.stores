@@ -1,0 +1,53 @@
+/* Shared responsive fallbacks for pages that keep their primary theme styles inline. */
+@media (max-width: 760px) {
+  .field-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .header,
+  .topbar,
+  .page-header,
+  .admin-page-header {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .header-right,
+  .topbar-actions,
+  .account-footer,
+  .account-footer-actions {
+    flex-wrap: wrap;
+  }
+
+  .modal-content,
+  .modal-box,
+  .section-card {
+    max-width: calc(100vw - 24px);
+  }
+
+  .table-wrapper,
+  .table-scroll,
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 640px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    width: calc(100% - 24px);
+  }
+
+  .header-right .live-clock {
+    display: none;
+  }
+
+  .modal-content,
+  .modal-box {
+    padding: 18px;
+  }
+}

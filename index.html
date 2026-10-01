@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DIT — Login</title>
+    <!-- Neon storage loads first so memoryStore is available immediately -->
+    <script src="neon-storage.js"></script>
+    <script>
+      /* Apply saved theme before first paint */
+      try {
+        const t = window.neonStorage.getItem('dit_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch(e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      .theme-btn { display: none !important; }
+      :root {
+        --bg-main: #09090b;
+        --bg-surface: rgba(24,24,27,0.6);
+        --bg-card: #18181b;
+        --bg-surface-2: rgba(255,255,255,0.03);
+        --bg-surface-3: rgba(255,255,255,0.05);
+        --border: rgba(255,255,255,0.08);
+        --border-hover: rgba(255,255,255,0.15);
+        --text-main: #fafafa;
+        --text-muted: #a1a1aa;
+        --accent: #818cf8;
+        --accent-hover: #a5b4fc;
+        --accent-light: rgba(129,140,248,0.1);
+        --accent-glow: rgba(129,140,248,0.3);
+        --success: #4ade80;
+        --success-light: rgba(74,222,128,0.05);
+        --success-border: rgba(74,222,128,0.2);
+        --warning: #facc15;
+        --warning-light: rgba(250,204,21,0.1);
+        --danger: #f87171;
+        --danger-light: rgba(248,113,113,0.1);
+        --danger-border: rgba(248,113,113,0.3);
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.3),0 2px 4px -1px rgba(0,0,0,0.2);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.3),0 4px 6px -2px rgba(0,0,0,0.2);
+        --input-bg: rgba(0,0,0,0.2);
+        --input-bg-focus: rgba(0,0,0,0.4);
+        --body-bg: radial-gradient(circle at 0% 0%,#1e1b4b 0%,var(--bg-main) 50%);
+        --particle-color: rgba(255,255,255,0.4);
+        --line-color: 129,140,248;
+      }
+      [data-theme="light"] {
+        --bg-main: #f8fafc;
+        --bg-surface: rgba(255,255,255,0.6);
+        --bg-card: #ffffff;
+        --bg-surface-2: #f8fafc;
+        --bg-surface-3: #f1f5f9;
+        --border: rgba(15,23,42,0.08);
+        --border-hover: rgba(15,23,42,0.15);
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --accent: #4f46e5;
+        --accent-hover: #4338ca;
+        --accent-light: rgba(79,70,229,0.08);
+        --accent-glow: rgba(79,70,229,0.2);
+        --success: #16a34a;
+        --success-light: rgba(22,163,74,0.05);
+        --success-border: rgba(22,163,74,0.2);
+        --warning: #d97706;
+        --warning-light: rgba(217,119,6,0.1);
+        --danger: #dc2626;
+        --danger-light: rgba(220,38,38,0.05);
+        --danger-border: rgba(220,38,38,0.2);
+        --shadow-sm: 0 1px 2px rgba(15,23,42,0.05);
+        --shadow-md: 0 4px 6px -1px rgba(15,23,42,0.1),0 2px 4px -1px rgba(15,23,42,0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(15,23,42,0.1),0 4px 6px -2px rgba(15,23,42,0.05);
+        --input-bg: #f8fafc;
+        --input-bg-focus: #ffffff;
+        --body-bg: radial-gradient(circle at 0% 0%,#e0e7ff 0%,var(--bg-main) 50%);
+        --particle-color: rgba(15,23,42,0.3);
+        --line-color: 79,70,229;
+      }
+      *{margin:0;padding:0;box-sizing:border-box;}
+      body{font-family:"Outfit",system-ui,sans-serif;background:var(--body-bg);color:var(--text-main);min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;overflow-x:hidden;transition:background 0.4s ease,color 0.4s ease;}
+      #bgCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;}
+      .ambient-light{position:fixed;width:800px;height:800px;background:radial-gradient(circle,var(--accent-glow) 0%,transparent 70%);border-radius:50%;top:-300px;right:-300px;z-index:0;opacity:0.4;filter:blur(80px);pointer-events:none;}
+
+      /* ── Admin button ── */
+      .admin-btn{position:absolute;top:20px;right:20px;z-index:10;padding:10px 20px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-weight:600;font-size:0.9rem;cursor:pointer;backdrop-filter:blur(12px);transition:all 0.3s ease;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-sm);}
+      .admin-btn:hover{color:var(--accent);border-color:var(--accent);transform:translateY(-2px);box-shadow:0 10px 15px -3px var(--accent-glow);}
+
+      /* ── Login card ── */
+      .container{position:relative;z-index:2;text-align:center;padding:50px 60px;background:var(--bg-surface);border:1px solid var(--border);border-radius:24px;box-shadow:var(--shadow-lg);backdrop-filter:blur(16px);max-width:90%;width:480px;animation:slideUp 1s cubic-bezier(0.16,1,0.3,1);margin:40px 0;}
+      @keyframes slideUp{from{opacity:0;transform:translateY(40px) scale(0.95);}to{opacity:1;transform:translateY(0) scale(1);}}
+      h1{font-size:3.2rem;font-weight:700;letter-spacing:-1.5px;margin-bottom:10px;background:linear-gradient(135deg,var(--text-main),var(--accent));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+      p{font-size:1.1rem;color:var(--text-muted);margin-bottom:35px;font-weight:500;}
+      .enter-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:16px 36px;background:var(--accent);color:#fff;text-decoration:none;border:none;border-radius:12px;font-weight:600;font-size:1rem;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px var(--accent-glow);font-family:inherit;width:100%;}
+      .enter-btn:hover{transform:translateY(-3px);background:var(--accent-hover);box-shadow:0 8px 25px var(--accent-glow);}
+
+      /* ── Modals ── */
+      .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);display:flex;justify-content:center;align-items:center;z-index:100;opacity:0;visibility:hidden;transition:all 0.3s ease;padding:20px;}
+      [data-theme="light"] .modal-overlay{background:rgba(15,23,42,0.3);}
+      .modal-overlay.active{opacity:1;visibility:visible;}
+      .modal-content{background:var(--bg-card);padding:32px;border-radius:20px;width:90%;max-width:420px;border:1px solid var(--border);box-shadow:var(--shadow-lg);transform:scale(0.9) translateY(20px);transition:transform 0.3s ease;max-height:85vh;overflow-y:auto;}
+      .modal-content.wide{max-width:860px;width:95%;padding:0;overflow:hidden;display:flex;flex-direction:column;border-radius:18px;max-height:92vh;}
+      .modal-content.wide .modal-header{padding:14px 22px 0;margin-bottom:0;border-bottom:none;}
+      .modal-overlay.active .modal-content{transform:scale(1) translateY(0);}
+      .admin-scroll-body{overflow-y:auto;padding:0 24px 28px;flex:1;}
+      .admin-scroll-body::-webkit-scrollbar{width:6px;}
+      .admin-scroll-body::-webkit-scrollbar-track{background:transparent;}
+      .admin-scroll-body::-webkit-scrollbar-thumb{background:var(--border-hover);border-radius:6px;}
+      .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:15px;}
+      .modal-title{font-size:1.25rem;font-weight:700;color:var(--text-main);}
+      .close-btn{background:var(--bg-surface-3);border:1px solid var(--border);cursor:pointer;color:var(--text-muted);padding:6px;border-radius:8px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;}
+      .close-btn:hover{color:var(--danger);background:var(--danger-light);border-color:var(--danger-border);transform:rotate(90deg);}
+
+      /* ── Inputs ── */
+      .input-group{margin-bottom:20px;position:relative;}
+      .input-group label{display:block;text-align:left;font-size:0.9rem;font-weight:500;margin-bottom:8px;color:var(--text-muted);}
+      .input-wrapper{position:relative;display:flex;align-items:center;}
+      .input-group input{width:100%;padding:14px 16px;padding-right:45px;border:1px solid var(--border);border-radius:10px;background:var(--input-bg);color:var(--text-main);font-family:inherit;font-size:1rem;transition:all 0.2s;}
+      .input-group input::placeholder{color:var(--text-muted);opacity:0.6;}
+      .input-group input:focus{outline:none;border-color:var(--accent);background:var(--input-bg-focus);box-shadow:0 0 0 4px var(--accent-glow);}
+      .toggle-password{position:absolute;right:12px;cursor:pointer;color:var(--text-muted);background:none;border:none;padding:4px;border-radius:4px;display:flex;}
+      .toggle-password:hover{color:var(--text-main);background:var(--bg-surface-3);}
+      input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:none;}
+
+      /* ── Buttons ── */
+      .modal-btn{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-weight:600;font-size:1rem;cursor:pointer;margin-top:8px;transition:all 0.2s;font-family:inherit;}
+      .modal-btn:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:0 4px 12px var(--accent-glow);}
+      .modal-btn.secondary{background:transparent;color:var(--accent);border:1px solid var(--accent);}
+      .modal-btn.secondary:hover{background:var(--accent-light);}
+      .modal-btn.danger{background:var(--danger-light);color:var(--danger);border:1px solid var(--danger-border);}
+      .modal-btn.danger:hover{background:var(--danger);color:#fff;}
+      .modal-btn.auto{width:auto;margin-top:0;display:inline-flex;align-items:center;gap:8px;padding:10px 18px;}
+      .error-msg,.success-msg{font-size:0.85rem;margin-top:10px;margin-bottom:10px;display:none;text-align:center;font-weight:600;}
+      .error-msg{color:var(--danger);}
+      .success-msg{color:var(--success);}
+
+      /* ── Admin dashboard layout ── */
+      .admin-page-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin:12px 0 16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+      .admin-eyebrow{display:inline-flex;align-items:center;gap:5px;font-size:0.65rem;font-weight:700;letter-spacing:1px;color:var(--accent);text-transform:uppercase;margin-bottom:4px;}
+      .admin-page-title{font-size:1.4rem;font-weight:700;letter-spacing:-0.5px;color:var(--text-main);margin-bottom:3px;}
+      .admin-page-subtitle{font-size:0.8rem;color:var(--text-muted);font-weight:500;max-width:45ch;}
+      .stat-box-group{display:flex;gap:8px;flex-shrink:0;}
+      .stat-box{background:var(--bg-surface-2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;min-width:88px;display:flex;flex-direction:column;gap:4px;transition:all 0.2s ease;}
+      .stat-box:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:var(--shadow-md);}
+      .stat-icon{width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:2px;}
+      .stat-icon svg{width:14px;height:14px;}
+      .stat-box .num{display:block;font-size:1.2rem;font-weight:700;line-height:1;color:var(--text-main);}
+      .stat-box .lbl{font-size:0.65rem;color:var(--text-muted);font-weight:600;}
+      .stat-teal .stat-icon{background:var(--accent-light);color:var(--accent);}
+      .stat-teal .num{color:var(--accent);}
+      .stat-amber .stat-icon{background:var(--warning-light);color:var(--warning);}
+      .stat-amber .num{color:var(--warning);}
+      .stat-slate .stat-icon{background:var(--bg-surface-3);color:var(--text-muted);}
+
+      /* ── Section cards ── */
+      .section-card{background:var(--bg-surface-2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow-sm);transition:border-color 0.25s,box-shadow 0.25s;}
+      .section-card:hover{border-color:var(--border-hover);box-shadow:var(--shadow-md);}
+      .section-card-header{padding:12px 16px;background:linear-gradient(90deg,var(--accent-light),transparent);display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+      .section-icon-box{width:32px;height:32px;border-radius:9px;background:var(--accent-light);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+      .section-icon-box svg{width:16px;height:16px;}
+      .section-card-header h4{font-size:0.9rem;font-weight:700;color:var(--text-main);margin-bottom:1px;}
+      .section-card-header span{font-size:0.75rem;color:var(--text-muted);}
+      .section-card-body{padding:16px;}
+      .field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;}
+      .toggle-row{display:flex;flex-direction:column;gap:8px;padding-top:14px;margin-top:4px;border-top:1px solid var(--border);}
+      .module-access-wrapper{width:100%;}
+      .module-access-label{font-size:0.75rem;font-weight:700;letter-spacing:0.8px;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;display:block;}
+      .module-priv-group{display:flex;flex-wrap:wrap;gap:12px;}
+      .module-priv-block{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-left:3px solid transparent;border-radius:8px;padding:5px 10px;transition:all 0.2s;background:var(--bg-card);}
+      .module-priv-block.granted{border-color:var(--success-border);border-left-color:var(--success);background:var(--success-light);}
+      .module-priv-name{display:flex;align-items:center;gap:8px;font-size:0.85rem;font-weight:700;color:var(--text-main);}
+      .module-priv-name::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--text-muted);flex-shrink:0;transition:background 0.2s;}
+      .module-priv-block.granted .module-priv-name::before{background:var(--success);box-shadow:0 0 0 3px var(--success-border);}
+      .module-priv-select{padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-surface-3);color:var(--text-main);font-family:inherit;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s;outline:none;}
+      .module-priv-select:focus,.module-priv-select:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+      .admin-full-access-note{font-size:0.75rem;color:var(--success);font-weight:600;padding:9px 12px;border:1px dashed var(--success-border);border-radius:10px;background:var(--success-light);text-align:center;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;}
+      .create-user-footer{display:flex;justify-content:flex-end;margin-top:12px;}
+
+      /* ── Account cards ── */
+      .accounts-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;margin-top:4px;}
+      .accounts-header h3{font-size:1.05rem;font-weight:700;color:var(--text-main);}
+      .accounts-header p{font-size:0.78rem;color:var(--text-muted);}
+      .count-pill{background:var(--accent-light);color:var(--accent);padding:5px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;white-space:nowrap;cursor:pointer;transition:all 0.15s;}
+      .count-pill:hover{background:var(--accent);color:#fff;}
+      .account-card{position:relative;border-top:1px solid var(--border);padding:14px 16px 14px 18px;transition:background 0.2s;}
+      .account-card:first-child{border-top:none;}
+      .account-card:hover{background:var(--bg-surface-3);}
+      .account-card::before{content:"";position:absolute;left:0;top:20px;bottom:20px;width:4px;border-radius:0 4px 4px 0;background:var(--accent);opacity:0.5;transition:opacity 0.2s;}
+      .account-card:hover::before{opacity:1;}
+      .account-card.is-admin::before{background:var(--warning);}
+      .account-card.is-you{background:var(--accent-light);}
+      .account-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+      .account-identity{display:flex;align-items:center;gap:10px;}
+      .avatar-circle{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent-hover));color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.95rem;flex-shrink:0;box-shadow:0 4px 12px -3px var(--accent-glow);}
+      .account-card.is-admin .avatar-circle{background:linear-gradient(135deg,var(--warning),#b45309);}
+      .account-name{font-weight:700;font-size:0.9rem;color:var(--text-main);}
+      .account-email{font-size:0.75rem;color:var(--text-muted);}
+      .badge-row{display:flex;gap:6px;flex-wrap:wrap;}
+      .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:0.62rem;font-weight:700;letter-spacing:0.3px;text-transform:uppercase;white-space:nowrap;}
+      .badge-role-admin{background:var(--warning-light);color:var(--warning);}
+      .badge-role-user{background:var(--accent-light);color:var(--accent);}
+      .badge-you{background:var(--success-light);color:var(--success);border:1px solid var(--success-border);}
+      .account-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+      .muted-note{color:var(--text-muted);font-size:0.78rem;font-weight:500;}
+
+      /* ── Department tags ── */
+      .dept-tag{display:inline-flex;align-items:center;gap:6px;background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;padding:5px 10px;font-size:0.78rem;font-weight:700;color:var(--accent);}
+      .dept-tag button{background:none;border:none;cursor:pointer;padding:0 2px;font-size:0.9rem;line-height:1;transition:color 0.15s;display:flex;align-items:center;}
+      .dept-tag .btn-edit{color:var(--accent);}
+      .dept-tag .btn-edit:hover{color:var(--accent-hover);}
+      .dept-tag .btn-delete{color:var(--danger);}
+      .dept-tag .btn-delete:hover{color:var(--danger);}
+
+      /* ── Confirm dialog ── */
+      .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all 0.25s ease;}
+      .confirm-overlay.active{opacity:1;visibility:visible;}
+      .confirm-box{background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:32px;max-width:400px;width:90%;text-align:center;box-shadow:0 25px 50px rgba(0,0,0,0.4);transform:scale(0.9) translateY(20px);transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+      .confirm-overlay.active .confirm-box{transform:scale(1) translateY(0);}
+      .confirm-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+      .confirm-icon.danger-icon{background:var(--danger-light);color:var(--danger);border:1px solid var(--danger-border);}
+      .confirm-title{font-size:1.2rem;font-weight:700;color:var(--text-main);margin-bottom:8px;}
+      .confirm-message{font-size:0.9rem;color:var(--text-muted);margin-bottom:24px;line-height:1.5;}
+      .confirm-actions{display:flex;gap:12px;justify-content:center;}
+      .confirm-actions button{padding:10px 24px;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;border:none;}
+      .btn-cancel-confirm{background:var(--bg-surface-3);color:var(--text-main);border:1px solid var(--border) !important;}
+      .btn-cancel-confirm:hover{background:var(--bg-surface-2);}
+      .btn-danger-confirm{background:var(--danger);color:#fff;}
+      .btn-danger-confirm:hover{box-shadow:0 4px 16px rgba(220,38,38,0.35);}
+
+      /* ── Compact admin scoped overrides ── */
+      .admin-scroll-body .input-group{margin-bottom:0;}
+      .admin-scroll-body .input-group label{font-size:0.78rem;margin-bottom:5px;}
+      .admin-scroll-body .input-group input{padding:9px 12px;padding-right:38px;font-size:0.85rem;border-radius:8px;}
+      .admin-scroll-body .modal-btn{padding:9px;font-size:0.85rem;border-radius:8px;}
+      .admin-scroll-body .modal-btn.auto{padding:7px 13px;font-size:0.8rem;gap:6px;}
+      .admin-scroll-body .modal-btn svg{width:14px;height:14px;}
+      .admin-scroll-body .error-msg,.admin-scroll-body .success-msg{font-size:0.75rem;}
+
+      .footer{position:relative;margin-top:20px;margin-bottom:20px;color:var(--text-muted);font-size:0.8rem;opacity:0.6;z-index:2;}
+      @media(max-width:600px){h1{font-size:2.2rem;}.container{padding:30px;width:95%;}.stat-box-group{width:100%;}.stat-box{flex:1;min-width:auto;}.section-card-body{padding:16px;}.admin-scroll-body{padding:0 16px 20px;}}
+    </style>
+    <link rel="stylesheet" href="responsive.css" />
+  </head>
+  <body>
+    <canvas id="bgCanvas"></canvas>
+    <div class="ambient-light"></div>
+
+    <button class="admin-btn" onclick="openModal('adminAuthModal')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+      Admin Panel
+    </button>
+
+    <!-- Login card -->
+    <div class="container">
+      <h1>DIT</h1>
+      <p>Integrated Workplace Management System</p>
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="input-group">
+          <label for="loginUser">Username or Email</label>
+          <input type="text" id="loginUser" placeholder="Enter username or email" required />
+        </div>
+        <div class="input-group">
+          <label for="loginPass">Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="loginPass" placeholder="Enter password" required />
+            <button type="button" class="toggle-password" onclick="togglePwd('loginPass',this)">
+              <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" style="display:none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+        </div>
+        <div id="loginError" class="error-msg">Invalid username/email or password.</div>
+        <button type="submit" class="enter-btn">
+          Login
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </form>
+    </div>
+
+    <!-- Admin auth modal -->
+    <div id="adminAuthModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Admin Verification</h3>
+          <button class="close-btn" onclick="closeModal('adminAuthModal')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <form id="adminAuthForm" onsubmit="verifyAdmin(event)">
+          <div class="input-group">
+            <label for="adminEmailInput">Admin Email</label>
+            <input type="email" id="adminEmailInput" placeholder="admin@dit.local" required />
+          </div>
+          <div class="input-group">
+            <label for="adminPasswordInput">Admin Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="adminPasswordInput" placeholder="Required for access" required />
+              <button type="button" class="toggle-password" onclick="togglePwd('adminPasswordInput',this)">
+                <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" style="display:none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="adminAuthError" class="error-msg">Incorrect email or password.</div>
+          <button type="submit" class="modal-btn">Verify &amp; Enter</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Admin dashboard modal -->
+    <div id="adminDashboardModal" class="modal-overlay">
+      <div class="modal-content wide">
+        <div class="modal-header" style="border-bottom:none;margin-bottom:0;padding-bottom:0">
+          <div style="flex:1"></div>
+          <button class="close-btn" onclick="closeAdminDashboard()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="admin-scroll-body">
+          <div class="admin-page-header">
+            <div>
+              <div class="admin-eyebrow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"></path></svg> System Administration</div>
+              <div class="admin-page-title">User Access</div>
+              <p class="admin-page-subtitle">Create accounts, reset credentials, and manage module access.</p>
+            </div>
+            <div class="stat-box-group">
+              <div class="stat-box stat-teal">
+                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                <span id="totalUsersCount" class="num">0</span><span class="lbl">Total users</span>
+              </div>
+              <div class="stat-box stat-amber">
+                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg></div>
+                <span id="adminCount" class="num">0</span><span class="lbl">Admins</span>
+              </div>
+              <div class="stat-box stat-slate">
+                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+                <span id="moduleCount" class="num">5</span><span class="lbl">Modules</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Create user form -->
+          <div class="section-card">
+            <div class="section-card-header">
+              <div class="section-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
+              <div><h4>Add a new user</h4><span>Set login details and initial access privileges.</span></div>
+            </div>
+            <div class="section-card-body">
+              <form id="createUserForm" onsubmit="handleCreateUser(event)">
+                <div class="field-grid" style="margin-bottom:18px">
+                  <div class="input-group" style="margin-bottom:0"><label for="newFullName">Full name</label><input type="text" id="newFullName" placeholder="e.g. Ama Mensah" required style="padding-right:16px"/></div>
+                  <div class="input-group" style="margin-bottom:0"><label for="newUsername">Username</label><input type="text" id="newUsername" placeholder="e.g. ama.mensah" required style="padding-right:16px"/></div>
+                  <div class="input-group" style="margin-bottom:0"><label for="newEmail">Email address</label><input type="email" id="newEmail" placeholder="name@dit.local" required style="padding-right:16px"/></div>
+                  <div class="input-group" style="margin-bottom:0">
+                    <label for="newTempPassword">Temporary password</label>
+                    <div class="input-wrapper">
+                      <input type="password" id="newTempPassword" placeholder="Min 8 characters" minlength="8" required />
+                      <button type="button" class="toggle-password" onclick="togglePwd('newTempPassword',this)">
+                        <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="eye-closed" style="display:none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="input-group" style="margin-bottom:0">
+                    <label for="newRole">Account role</label>
+                    <select id="newRole" style="width:100%;padding:9px 12px;font-size:0.85rem;border:1px solid var(--border);border-radius:8px;background:var(--bg-surface-3);color:var(--text-main);font-family:inherit;font-weight:600" onchange="updateCreateRoleAccess()">
+                      <option value="User">User</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="toggle-row">
+                  <div class="module-access-wrapper" id="newUserModulesWrapper">
+                    <span class="module-access-label">Module access &amp; privileges</span>
+                    <div class="module-priv-group" id="newUserModules"></div>
+                  </div>
+                  <div class="admin-full-access-note" id="newUserAdminNote" style="display:none">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Admins have full access to all modules by default.
+                  </div>
+                </div>
+                <div id="createMsg" class="success-msg">User created successfully!</div>
+                <div id="createError" class="error-msg">Error creating user.</div>
+                <div class="create-user-footer">
+                  <button type="submit" class="modal-btn auto">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Create user
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Departments section -->
+          <div class="section-card">
+            <div class="section-card-header">
+              <div class="section-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V5l7-3 7 3v16"/><path d="M9 9h1"/><path d="M14 9h1"/><path d="M9 13h1"/><path d="M14 13h1"/></svg></div>
+              <div><h4>Departments</h4><span>Create and delete inventory departments. Deleting removes all associated data.</span></div>
+            </div>
+            <div class="section-card-body">
+              <form id="createDepartmentForm" onsubmit="handleCreateDepartment(event)" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+                <div class="input-group" style="margin-bottom:0;flex:1;min-width:200px">
+                  <label for="newDepartmentName">Department name</label>
+                  <input type="text" id="newDepartmentName" placeholder="e.g. LOGISTICS" maxlength="80" required style="padding-right:16px;text-transform:uppercase" />
+                </div>
+                <button type="submit" class="modal-btn auto">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span id="departmentSubmitLabel">Create department</span>
+                </button>
+              </form>
+              <div id="departmentMsg" class="success-msg">Department saved!</div>
+              <div id="departmentError" class="error-msg"></div>
+              <div id="departmentList" style="display:flex;flex-wrap:wrap;gap:8px;min-height:32px;"></div>
+            </div>
+          </div>
+
+          <!-- User accounts -->
+          <div class="accounts-header">
+            <div><h3>User accounts</h3><p>Save changes after editing each account.</p></div>
+            <span id="accountsCountPill" class="count-pill">0 accounts</span>
+          </div>
+          <div class="section-card" style="margin-bottom:0"><div id="userAccountsList"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Professional confirm dialog -->
+    <div class="confirm-overlay" id="confirmOverlay">
+      <div class="confirm-box">
+        <div class="confirm-icon danger-icon" id="confirmIcon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="confirm-title" id="confirmTitle">Confirm Action</div>
+        <div class="confirm-message" id="confirmMessage">Are you sure?</div>
+        <div class="confirm-actions">
+          <button class="btn-cancel-confirm" id="confirmCancelBtn">Cancel</button>
+          <button class="btn-danger-confirm" id="confirmOkBtn">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">Secure Inventory System — DIT</div>
+
+    <script>
+      /* ═══════════════════════════════════════════════════
+         NEON STORAGE — single persistent source of truth
+         All data goes to Neon via window.neonStorage.
+         Nothing uses localStorage/sessionStorage for data.
+      ═══════════════════════════════════════════════════ */
+      const memoryStore = window.neonStorage;
+
+      /* ── Theme ── */
+      function toggleTheme() {
+        const next = (document.documentElement.getAttribute('data-theme') || 'light') === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', next);
+        try { memoryStore.setItem('dit_theme', next); } catch(e){}
+      }
+
+      /* ── Background canvas ── */
+      (function() {
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        let pts = [];
+        function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+        function init() { resize(); pts = []; const n = Math.floor(innerWidth * innerHeight / 9000); for (let i = 0; i < n; i++) pts.push({ x: Math.random()*innerWidth, y: Math.random()*innerHeight, sx: (Math.random()-.5)*.5, sy: (Math.random()-.5)*.5, r: Math.random()*2+1 }); }
+        function draw() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          const light = document.documentElement.getAttribute('data-theme') === 'light';
+          const col = light ? '79,70,229' : '129,140,248';
+          pts.forEach(p => { p.x += p.sx; p.y += p.sy; if (p.x > canvas.width || p.x < 0) p.sx *= -1; if (p.y > canvas.height || p.y < 0) p.sy *= -1; ctx.fillStyle = light ? 'rgba(15,23,42,0.3)' : 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill(); });
+          for (let i = 0; i < pts.length; i++) for (let j = i+1; j < pts.length; j++) { const dx = pts[i].x-pts[j].x, dy = pts[i].y-pts[j].y, d = Math.sqrt(dx*dx+dy*dy); if (d < 120) { ctx.beginPath(); ctx.strokeStyle = `rgba(${col},${.15-d/1000})`; ctx.lineWidth = 1; ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke(); } }
+          requestAnimationFrame(draw);
+        }
+        init(); draw();
+        window.addEventListener('resize', init);
+      })();
+
+      /* ── Password toggle ── */
+      function togglePwd(id, btn) {
+        const inp = document.getElementById(id);
+        const eo = btn.querySelector('.eye-open'), ec = btn.querySelector('.eye-closed');
+        if (inp.type === 'password') { inp.type = 'text'; eo.style.display = 'none'; ec.style.display = 'block'; }
+        else { inp.type = 'password'; eo.style.display = 'block'; ec.style.display = 'none'; }
+      }
+      window.togglePasswordVisibility = togglePwd; /* alias for compatibility */
+
+      /* ══════════════════════════════════════════════
+         PROFESSIONAL CONFIRM DIALOG (replaces alert/confirm)
+      ══════════════════════════════════════════════ */
+      let _confirmResolve = null;
+      function showConfirm(title, message, okLabel, dangerous) {
+        return new Promise(resolve => {
+          _confirmResolve = resolve;
+          document.getElementById('confirmTitle').textContent = title;
+          document.getElementById('confirmMessage').textContent = message;
+          const okBtn = document.getElementById('confirmOkBtn');
+          okBtn.textContent = okLabel || 'Confirm';
+          okBtn.className = dangerous ? 'btn-danger-confirm' : 'btn-danger-confirm';
+          document.getElementById('confirmOverlay').classList.add('active');
+          okBtn.focus();
+        });
+      }
+      document.getElementById('confirmOkBtn').onclick = () => { document.getElementById('confirmOverlay').classList.remove('active'); if (_confirmResolve) { _confirmResolve(true); _confirmResolve = null; } };
+      document.getElementById('confirmCancelBtn').onclick = () => { document.getElementById('confirmOverlay').classList.remove('active'); if (_confirmResolve) { _confirmResolve(false); _confirmResolve = null; } };
+
+      /* ══════════════════════════════════════════════
+         MODULE & PRIVILEGE DEFINITIONS
+      ══════════════════════════════════════════════ */
+      const MODULES = [
+        { key: 'clothing',    label: 'Clothing' },
+        { key: 'inventories', label: 'Inventories' },
+        { key: 'payStores',   label: 'Pay-stores' },
+        { key: 'jobscard',    label: 'Jobs Card' },
+        { key: 'personnel',   label: 'Personnel' },
+      ];
+
+      function getFullPrivileges() {
+        const p = {};
+        MODULES.forEach(m => { p[m.key] = { view: true, add: true, edit: true, delete: true }; });
+        return p;
+      }
+
+      function normalizePriv(v) {
+        if (v && typeof v === 'object') return { view: !!v.view, add: !!v.add, edit: !!v.edit, delete: !!v.delete };
+        if (v === true) return { view: true, add: true, edit: true, delete: true };
+        return { view: false, add: false, edit: false, delete: false };
+      }
+
+      function privLevel(priv) {
+        if (priv.view && priv.add && priv.edit && priv.delete) return 'full';
+        if (priv.view && priv.add && priv.edit) return 'edit';
+        if (priv.view && priv.add) return 'add';
+        if (priv.view && priv.delete) return 'delete';
+        if (priv.view) return 'view';
+        return 'none';
+      }
+
+      function buildModuleHtml(mods) {
+        mods = mods || {};
+        return MODULES.map(m => {
+          const lv = privLevel(normalizePriv(mods[m.key]));
+          const granted = lv !== 'none';
+          return `<div class="module-priv-block${granted?' granted':''}" data-module-key="${m.key}">
+            <span class="module-priv-name">${m.label}</span>
+            <select class="module-priv-select" onchange="onPrivChange(this)">
+              <option value="none"${lv==='none'?' selected':''}>No Access</option>
+              <option value="view"${lv==='view'?' selected':''}>View Only</option>
+              <option value="add"${lv==='add'?' selected':''}>View &amp; Add</option>
+              <option value="edit"${lv==='edit'?' selected':''}>View &amp; Edit</option>
+              <option value="delete"${lv==='delete'?' selected':''}>View &amp; Delete</option>
+              <option value="full"${lv==='full'?' selected':''}>Full Access</option>
+            </select>
+          </div>`;
+        }).join('');
+      }
+
+      window.onPrivChange = sel => {
+        const b = sel.closest('.module-priv-block');
+        if (b) b.classList.toggle('granted', sel.value !== 'none');
+      };
+
+      function collectModulePrivs(containerId) {
+        const mods = {};
+        const c = document.getElementById(containerId);
+        if (!c) return mods;
+        c.querySelectorAll('.module-priv-block').forEach(b => {
+          const key = b.dataset.moduleKey;
+          const val = b.querySelector('select')?.value || 'none';
+          mods[key] = {
+            view: ['view','add','edit','delete','full'].includes(val),
+            add:  ['add','edit','full'].includes(val),
+            edit: ['edit','full'].includes(val),
+            delete: ['delete','full'].includes(val),
+          };
+        });
+        return mods;
+      }
+
+      /* ══════════════════════════════════════════════
+         STORAGE KEYS
+      ══════════════════════════════════════════════ */
+      const USERS_KEY   = 'dit_stores_users';
+      const DEPTS_KEY   = 'dit_departments_v1';
+      const INV_KEY     = 'dit_stores_data_v33';
+
+      /* ══════════════════════════════════════════════
+         USERS — read/write via Neon
+      ══════════════════════════════════════════════ */
+      const DEFAULT_USERS = [{
+        fullName: 'Admin', username: 'admin', email: 'admin@dit.local',
+        password: 'Password@123', role: 'Admin', modules: getFullPrivileges(),
+      }];
+
+      function isAdmin(role) { return role === 'Admin' || role === 'Administrator'; }
+
+      function getUsers() {
+        try {
+          const raw = memoryStore.getItem(USERS_KEY);
+          if (!raw) { memoryStore.setItem(USERS_KEY, JSON.stringify(DEFAULT_USERS)); return JSON.parse(JSON.stringify(DEFAULT_USERS)); }
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed) || !parsed.length || typeof parsed[0].email !== 'string') {
+            memoryStore.setItem(USERS_KEY, JSON.stringify(DEFAULT_USERS));
+            return JSON.parse(JSON.stringify(DEFAULT_USERS));
+          }
+          return parsed;
+        } catch(e) {
+          console.error('getUsers error', e);
+          return JSON.parse(JSON.stringify(DEFAULT_USERS));
+        }
+      }
+
+      function saveUsers(users) {
+        try { memoryStore.setItem(USERS_KEY, JSON.stringify(users)); }
+        catch(e) { console.error('saveUsers error', e); throw e; }
+      }
+
+      /* ══════════════════════════════════════════════
+         DEPARTMENTS — read/write via Neon
+      ══════════════════════════════════════════════ */
+      function getDepartments() {
+        try {
+          const raw = memoryStore.getItem(DEPTS_KEY);
+          if (raw) {
+            const arr = JSON.parse(raw);
+            const clean = [...new Set(arr.map(d => String(d||'').trim().toUpperCase()).filter(Boolean))];
+            if (clean.length) return clean;
+          }
+          // Fall back to inventory state departments
+          const invRaw = memoryStore.getItem(INV_KEY);
+          if (invRaw) {
+            const inv = JSON.parse(invRaw);
+            if (Array.isArray(inv.departments) && inv.departments.length) return inv.departments;
+          }
+        } catch(e) {}
+        return ['DIT'];
+      }
+
+      function saveDepartments(depts) {
+        const clean = [...new Set(depts.map(d => String(d||'').trim().toUpperCase()).filter(Boolean))];
+        const final = clean.length ? clean : ['DIT'];
+        memoryStore.setItem(DEPTS_KEY, JSON.stringify(final));
+        return final;
+      }
+
+      /* DELETE department — removes from Neon AND cleans related inventory data */
+      async function deleteDepartmentFromDB(name) {
+        // 1. Remove from departments list
+        const depts = getDepartments().filter(d => d !== name);
+        saveDepartments(depts.length ? depts : ['DIT']);
+
+        // 2. Purge from inventory state in Neon
+        try {
+          const invRaw = memoryStore.getItem(INV_KEY);
+          if (invRaw) {
+            const inv = JSON.parse(invRaw);
+            inv.departments = (inv.departments || []).filter(d => d !== name);
+            if (!inv.departments.length) inv.departments = ['DIT'];
+            if (inv.activeDept === name) inv.activeDept = inv.departments[0];
+            if (inv.defaultDept === name) inv.defaultDept = inv.departments[0];
+            inv.data = inv.data || {};
+            inv.data.items      = (inv.data.items || []).filter(i => i.department !== name);
+            inv.data.categories = (inv.data.categories || []).filter(c => c.dept !== name);
+            inv.data.offices    = (inv.data.offices || []).filter(o => o.dept !== name);
+            memoryStore.setItem(INV_KEY, JSON.stringify(inv));
+          }
+        } catch(e) { console.warn('deleteDept inventory cleanup error', e); }
+
+        // 3. Clean up user departmentPrivileges
+        try {
+          const users = getUsers();
+          users.forEach(u => { if (u.departmentPrivileges) delete u.departmentPrivileges[name]; });
+          saveUsers(users);
+        } catch(e) {}
+
+        // 4. Delete safe-keeping data for this department from Neon
+        try { memoryStore.removeItem && memoryStore.removeItem('safeKeepingItems_' + name); } catch(e) {}
+        try { memoryStore.removeItem && memoryStore.removeItem('safeKeepingLoans_'  + name); } catch(e) {}
+      }
+
+      /* ══════════════════════════════════════════════
+         MODAL CONTROLS
+      ══════════════════════════════════════════════ */
+      function openModal(id) {
+        document.getElementById(id).classList.add('active');
+        if (id === 'adminDashboardModal') loadAdminDashboard();
+      }
+
+      function closeModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.remove('active');
+        modal.querySelectorAll('form').forEach(f => f.reset());
+        modal.querySelectorAll('.error-msg,.success-msg').forEach(el => el.style.display = 'none');
+        modal.querySelectorAll('.module-priv-select').forEach(s => { s.value = 'none'; s.closest('.module-priv-block')?.classList.remove('granted'); });
+        modal.querySelectorAll('.toggle-password').forEach(btn => {
+          const inp = btn.closest('.input-wrapper')?.querySelector('input');
+          if (inp) inp.type = 'password';
+          const eo = btn.querySelector('.eye-open'), ec = btn.querySelector('.eye-closed');
+          if (eo) eo.style.display = 'block';
+          if (ec) ec.style.display = 'none';
+        });
+      }
+
+      /* Professional close for admin dashboard — offers to return to previous page */
+      function closeAdminDashboard() {
+        closeModal('adminDashboardModal');
+        // If opened from another page via ?admin=1, navigate back
+        const returnUrl = sessionStorage.getItem('adminReturnUrl');
+        if (returnUrl && new URLSearchParams(window.location.search).get('admin') === '1') {
+          sessionStorage.removeItem('adminReturnUrl');
+          window.location.href = returnUrl;
+        }
+      }
+
+      document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.addEventListener('click', e => { if (e.target === m) { if (m.id === 'adminDashboardModal') closeAdminDashboard(); else closeModal(m.id); } });
+      });
+
+      /* ══════════════════════════════════════════════
+         ADMIN AUTH
+      ══════════════════════════════════════════════ */
+      async function verifyAdmin(e) {
+        e.preventDefault();
+        const email = document.getElementById('adminEmailInput').value.trim().toLowerCase();
+        const pass  = document.getElementById('adminPasswordInput').value;
+        const errEl = document.getElementById('adminAuthError');
+        try {
+          const users = getUsers();
+          const admin = users.find(u => u.email.toLowerCase() === email && u.password === pass && isAdmin(u.role));
+          if (admin) {
+            sessionStorage.setItem('isAdminSession', 'true');
+            sessionStorage.setItem('loggedInUser', JSON.stringify(admin));
+            closeModal('adminAuthModal');
+            loadAdminDashboard();
+            openModal('adminDashboardModal');
+            document.getElementById('adminAuthForm').reset();
+            errEl.style.display = 'none';
+          } else {
+            errEl.textContent = 'Incorrect email or password.';
+            errEl.style.display = 'block';
+          }
+        } catch(err) {
+          errEl.textContent = 'Could not reach storage. Check your connection.';
+          errEl.style.display = 'block';
+        }
+      }
+
+      /* ══════════════════════════════════════════════
+         ADMIN DASHBOARD RENDER
+      ══════════════════════════════════════════════ */
+      function loadAdminDashboard() {
+        const users = getUsers();
+        const depts = getDepartments();
+        const admins = users.filter(u => isAdmin(u.role));
+
+        document.getElementById('totalUsersCount').textContent = users.length;
+        document.getElementById('adminCount').textContent      = admins.length;
+        document.getElementById('moduleCount').textContent     = MODULES.length;
+        document.getElementById('accountsCountPill').textContent = users.length === 1 ? '1 account' : `${users.length} accounts`;
+
+        // Render department list
+        renderDepartmentList(depts);
+
+        // Seed module selects
+        document.getElementById('newUserModules').innerHTML = buildModuleHtml({});
+
+        const session  = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null');
+        const list     = document.getElementById('userAccountsList');
+        list.innerHTML = '';
+
+        users.forEach((user, idx) => {
+          const isYou   = session && session.email === user.email;
+          const initial = (user.fullName || user.email).trim().charAt(0).toUpperCase();
+          const card    = document.createElement('div');
+          card.className = `account-card ${isAdmin(user.role) ? 'is-admin' : 'is-user'}${isYou ? ' is-you' : ''}`;
+
+          const moduleSection = isAdmin(user.role)
+            ? `<div class="admin-full-access-note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Admins have full access to all modules by default.</div>`
+            : `<div class="module-priv-group" id="acc-modules-${idx}">${buildModuleHtml(user.modules)}</div>`;
+
+          card.innerHTML = `
+            <div class="account-header">
+              <div class="account-identity">
+                <div class="avatar-circle">${initial}</div>
+                <div>
+                  <div class="account-name">${escHtml(user.fullName || '(No name)')}</div>
+                  <div class="account-email">${user.username ? '@' + escHtml(user.username) + ' — ' : ''}${escHtml(user.email)}</div>
+                </div>
+              </div>
+              <div class="badge-row">
+                <span class="badge ${isAdmin(user.role) ? 'badge-role-admin' : 'badge-role-user'}">${escHtml(user.role)}</span>
+                ${isYou ? '<span class="badge badge-you">You</span>' : ''}
+              </div>
+            </div>
+            <div class="field-grid" style="margin-bottom:0">
+              <div class="input-group" style="margin-bottom:0"><label>Full name</label><input type="text" id="acc-name-${idx}" value="${escHtml(user.fullName||'')}" style="padding-right:16px"/></div>
+              <div class="input-group" style="margin-bottom:0"><label>Username</label><input type="text" id="acc-username-${idx}" value="${escHtml(user.username||'')}" style="padding-right:16px"/></div>
+              <div class="input-group" style="margin-bottom:0"><label>Email address</label><input type="email" id="acc-email-${idx}" value="${escHtml(user.email)}" style="padding-right:16px"/></div>
+              <div class="input-group" style="margin-bottom:0">
+                <label>Reset password</label>
+                <div class="input-wrapper">
+                  <input type="password" id="acc-pass-${idx}" placeholder="Leave unchanged"/>
+                  <button type="button" class="toggle-password" onclick="togglePwd('acc-pass-${idx}',this)">
+                    <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="eye-closed" style="display:none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="toggle-row">
+              <div class="module-access-wrapper" id="acc-modules-${idx}Wrapper">
+                <span class="module-access-label">Module access &amp; privileges</span>
+                ${moduleSection}
+              </div>
+            </div>
+            <div id="acc-msg-${idx}" class="success-msg">Changes saved!</div>
+            <div class="account-footer">
+              <button type="button" class="modal-btn auto" onclick="toggleAccountRole(${idx})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>
+                ${isAdmin(user.role) ? 'Switch to User' : 'Make Admin'}
+              </button>
+              ${isYou
+                ? '<span class="muted-note">Your active account</span>'
+                : `<button type="button" class="modal-btn danger auto" onclick="deleteAccount(${idx})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</button>`}
+              <button type="button" class="modal-btn auto" onclick="saveAccount(${idx})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Save changes
+              </button>
+            </div>`;
+          list.appendChild(card);
+        });
+      }
+
+      /* ── Department list render ── */
+      function renderDepartmentList(depts) {
+        const el = document.getElementById('departmentList');
+        if (!el) return;
+        el.innerHTML = depts.map(d => `
+          <div class="dept-tag">
+            <span>${escHtml(d)}</span>
+            <button class="btn-edit" onclick="editDepartment('${escAttr(d)}')" title="Rename">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn-delete" onclick="handleDeleteDepartment('${escAttr(d)}')" title="Delete department">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>`).join('');
+      }
+
+      window.editDepartment = function(name) {
+        const inp = document.getElementById('newDepartmentName');
+        const lbl = document.getElementById('departmentSubmitLabel');
+        inp.value = name;
+        inp.dataset.editing = name;
+        lbl.textContent = 'Save rename';
+        inp.focus(); inp.select();
+      };
+
+      /* Delete department — asks confirm then removes from Neon DB */
+      window.handleDeleteDepartment = async function(name) {
+        const ok = await showConfirm(
+          `Delete "${name}"?`,
+          `All inventory data, items, and offices under "${name}" will be permanently removed from the database. This cannot be undone.`,
+          'Delete Permanently',
+          true
+        );
+        if (!ok) return;
+        await deleteDepartmentFromDB(name);
+        loadAdminDashboard();
+      };
+
+      async function handleCreateDepartment(e) {
+        e.preventDefault();
+        const inp  = document.getElementById('newDepartmentName');
+        const msg  = document.getElementById('departmentMsg');
+        const errEl = document.getElementById('departmentError');
+        const name = (inp.value || '').trim().toUpperCase();
+        const editing = inp.dataset.editing || '';
+        errEl.style.display = 'none';
+        if (!name) return;
+        let depts = getDepartments();
+        if (depts.includes(name) && name !== editing) { errEl.textContent = `Department "${name}" already exists.`; errEl.style.display = 'block'; return; }
+        if (editing) {
+          const i = depts.indexOf(editing);
+          if (i !== -1) depts[i] = name;
+          // Sync inventory state
+          try {
+            const invRaw = memoryStore.getItem(INV_KEY);
+            if (invRaw) {
+              const inv = JSON.parse(invRaw);
+              inv.departments = (inv.departments||[]).map(d => d === editing ? name : d);
+              if (inv.activeDept === editing) inv.activeDept = name;
+              if (inv.defaultDept === editing) inv.defaultDept = name;
+              (inv.data?.items||[]).forEach(it => { if (it.department === editing) it.department = name; });
+              (inv.data?.categories||[]).forEach(c => { if (c.dept === editing) c.dept = name; });
+              (inv.data?.offices||[]).forEach(o => { if (o.dept === editing) o.dept = name; });
+              memoryStore.setItem(INV_KEY, JSON.stringify(inv));
+            }
+          } catch(err) {}
+          delete inp.dataset.editing;
+          document.getElementById('departmentSubmitLabel').textContent = 'Create department';
+        } else {
+          depts.push(name);
+        }
+        saveDepartments(depts);
+        inp.value = '';
+        msg.style.display = 'block';
+        loadAdminDashboard();
+        setTimeout(() => { msg.style.display = 'none'; }, 2000);
+      }
+
+      /* ── Create user ── */
+      function updateCreateRoleAccess() {
+        const adminSelected = document.getElementById('newRole').value === 'Admin';
+        document.getElementById('newUserModulesWrapper').style.display = adminSelected ? 'none' : 'block';
+        document.getElementById('newUserAdminNote').style.display     = adminSelected ? 'flex' : 'none';
+      }
+
+      async function handleCreateUser(e) {
+        e.preventDefault();
+        const fullName = document.getElementById('newFullName').value.trim();
+        const username = document.getElementById('newUsername').value.trim();
+        const email    = document.getElementById('newEmail').value.trim();
+        const password = document.getElementById('newTempPassword').value;
+        const role     = document.getElementById('newRole').value;
+        const msgEl    = document.getElementById('createMsg');
+        const errEl    = document.getElementById('createError');
+        errEl.style.display = 'none';
+
+        const users = getUsers();
+        if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+          errEl.textContent = 'A user with that email already exists.'; errEl.style.display = 'block'; return;
+        }
+        if (users.find(u => (u.username||'').toLowerCase() === username.toLowerCase())) {
+          errEl.textContent = 'A user with that username already exists.'; errEl.style.display = 'block'; return;
+        }
+
+        const modules = role === 'Admin' ? getFullPrivileges() : collectModulePrivs('newUserModules');
+        users.push({ fullName, username, email, password, role, modules });
+        saveUsers(users);
+
+        msgEl.style.display = 'block';
+        document.getElementById('createUserForm').reset();
+        updateCreateRoleAccess();
+        loadAdminDashboard();
+        setTimeout(() => { msgEl.style.display = 'none'; }, 2000);
+      }
+
+      /* ── Save account ── */
+      async function saveAccount(idx) {
+        const users = getUsers();
+        const user  = users[idx];
+        if (!user) return;
+
+        const newName     = document.getElementById(`acc-name-${idx}`).value.trim();
+        const newUsername = document.getElementById(`acc-username-${idx}`).value.trim();
+        const newEmail    = document.getElementById(`acc-email-${idx}`).value.trim();
+        const newPass     = document.getElementById(`acc-pass-${idx}`).value;
+
+        if (users.find((u, i) => i !== idx && u.email.toLowerCase() === newEmail.toLowerCase())) { alert('Another user has that email.'); return; }
+        if (newUsername && users.find((u, i) => i !== idx && (u.username||'').toLowerCase() === newUsername.toLowerCase())) { alert('Another user has that username.'); return; }
+
+        user.fullName = newName;
+        user.username = newUsername;
+        user.email    = newEmail;
+        if (newPass.trim()) user.password = newPass;
+        if (!isAdmin(user.role)) user.modules = collectModulePrivs(`acc-modules-${idx}`);
+        else user.modules = getFullPrivileges();
+
+        saveUsers(users);
+
+        const session = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null');
+        if (session && session.email.toLowerCase() === newEmail.toLowerCase()) sessionStorage.setItem('loggedInUser', JSON.stringify(user));
+
+        const msgEl = document.getElementById(`acc-msg-${idx}`);
+        if (msgEl) { msgEl.style.display = 'block'; setTimeout(() => { msgEl.style.display = 'none'; }, 2000); }
+        loadAdminDashboard();
+      }
+
+      /* ── Toggle role ── */
+      async function toggleAccountRole(idx) {
+        const users = getUsers();
+        const user  = users[idx];
+        if (!user) return;
+
+        const wasAdmin = isAdmin(user.role);
+        if (wasAdmin && users.filter(u => isAdmin(u.role)).length <= 1) { await showConfirm('Cannot demote', 'There must be at least one admin account.', 'OK', false); return; }
+
+        const action = wasAdmin ? 'switch to User' : 'promote to Admin';
+        const ok = await showConfirm(`Change role?`, `Are you sure you want to ${action} for ${user.fullName || user.email}?`, wasAdmin ? 'Switch to User' : 'Make Admin', false);
+        if (!ok) return;
+
+        user.role    = wasAdmin ? 'User' : 'Admin';
+        user.modules = isAdmin(user.role) ? getFullPrivileges() : user.modules;
+        saveUsers(users);
+
+        const session = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null');
+        if (session && session.email.toLowerCase() === user.email.toLowerCase()) {
+          sessionStorage.setItem('loggedInUser', JSON.stringify(user));
+          if (wasAdmin) { sessionStorage.removeItem('isAdminSession'); closeAdminDashboard(); }
+          else sessionStorage.setItem('isAdminSession', 'true');
+        }
+        loadAdminDashboard();
+      }
+
+      /* ── Delete account — removes from Neon ── */
+      async function deleteAccount(idx) {
+        const users = getUsers();
+        const user  = users[idx];
+        if (!user) return;
+
+        if (users.length <= 1) { await showConfirm('Cannot delete', 'There must be at least one user account.', 'OK', false); return; }
+        if (isAdmin(user.role) && users.filter(u => isAdmin(u.role)).length <= 1) { await showConfirm('Cannot delete', 'There must be at least one admin account.', 'OK', false); return; }
+
+        const ok = await showConfirm(
+          `Delete "${user.fullName || user.email}"?`,
+          `This account will be permanently removed from the database and cannot be recovered.`,
+          'Delete Account',
+          true
+        );
+        if (!ok) return;
+
+        const filtered = users.filter((_, i) => i !== idx);
+        saveUsers(filtered);        /* persists deletion to Neon immediately */
+        loadAdminDashboard();
+      }
+
+      /* ══════════════════════════════════════════════
+         LOGIN
+      ══════════════════════════════════════════════ */
+      async function handleLogin(e) {
+        e.preventDefault();
+        const id   = document.getElementById('loginUser').value.trim().toLowerCase();
+        const pass = document.getElementById('loginPass').value;
+        const errEl = document.getElementById('loginError');
+        try {
+          const users = getUsers();
+          const user  = users.find(u => (u.email.toLowerCase() === id || (u.username||'').toLowerCase() === id) && u.password === pass);
+          if (user) {
+            sessionStorage.setItem('loggedInUser', JSON.stringify(user));
+            sessionStorage.setItem('username', user.username || user.fullName || user.email);
+            if (isAdmin(user.role)) sessionStorage.setItem('isAdminSession', 'true');
+            window.location.href = 'dashboard.html';
+          } else {
+            errEl.style.display = 'block';
+          }
+        } catch(err) {
+          console.error('Login error', err);
+          errEl.textContent = 'Storage service unavailable. Please try again.';
+          errEl.style.display = 'block';
+        }
+      }
+
+      /* ══════════════════════════════════════════════
+         AUTO-OPEN ADMIN PANEL FROM NAVIGATION
+         (when arriving via ?admin=1 from other pages)
+      ══════════════════════════════════════════════ */
+      (function autoOpenAdmin() {
+        if (new URLSearchParams(window.location.search).get('admin') !== '1') return;
+        const u = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null');
+        if (!u || !isAdmin(u.role) || sessionStorage.getItem('isAdminSession') !== 'true') return;
+        document.querySelector('.container').style.display = 'none';
+        loadAdminDashboard();
+        document.getElementById('adminDashboardModal').classList.add('active');
+      })();
+
+      /* ── Helpers ── */
+      function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+      function escAttr(s) { return escHtml(s).replace(/'/g,'&#39;'); }
+    </script>
+  </body>
+</html>

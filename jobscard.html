@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jobs Records</title>
+  <script>document.documentElement.removeAttribute('data-theme');</script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Courier+Prime:wght@700&display=swap" rel="stylesheet">
+
+  <style>
+    /* --- CORE VARIABLES & RESET --- */
+    .theme-toggle { display: none !important; }
+    :root {
+      --bg: #f8fafc;
+      --bg-secondary: #f1f5f9;
+      --fg: #0f172a;
+      --muted: #64748b;
+      --accent: #0891b2;
+      --accent-light: rgba(8, 145, 178, 0.1);
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --success: #10b981;
+      --primary-color: #1a1a1a;
+      --accent-color: #2563eb;
+      --paper-color: #ffffff;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+
+    .main-wrapper { display: flex; flex-direction: column; min-height: 100vh; }
+    .main-content { flex: 1; width: 100%; display: flex; flex-direction: column; position: relative; }
+
+    /* --- HEADER --- */
+    .main-header { background: var(--card); padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 1rem; position: sticky; top: 0; z-index: 40; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+    @media(min-width: 768px) {
+      .main-header { flex-direction: row; justify-content: space-between; align-items: center; padding: 1rem 3rem; }
+    }
+
+    .content-area { padding: 2rem; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+
+    /* --- STATS CARDS --- */
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .status-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; transition: all 0.2s ease; }
+    .status-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08); border-color: var(--accent); }
+    .status-label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+    .status-count { font-size: 1.75rem; font-weight: 700; color: var(--fg); }
+
+    /* --- TABLE STYLES --- */
+    .table-container { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+    .table-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    .search-wrapper { position: relative; width: 250px; }
+    .search-input { width: 100%; padding: 0.6rem 1rem 0.6rem 2.5rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; outline: none; transition: border 0.2s; }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+    .search-icon { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); color: var(--muted); width: 16px; height: 16px; pointer-events: none; }
+    .table-scroll-wrapper { overflow-x: auto; width: 100%; }
+    .data-table { width: 100%; border-collapse: collapse; min-width: 900px; }
+    .data-table th { background: var(--bg); padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .data-table td { padding: 0.75rem 1rem; font-size: 0.9rem; border-bottom: 1px solid var(--border); color: var(--fg); vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--bg-secondary); }
+
+    /* --- BADGES --- */
+    .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+    .badge-pending { background: #f1f5f9; color: #475569; }
+    .badge-progress { background: #dbeafe; color: #1d4ed8; }
+    .badge-completed { background: #dcfce7; color: #15803d; }
+    .badge-hold { background: #fee2e2; color: #b91c1c; }
+    .badge-collected { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; }
+
+    /* --- BUTTONS --- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.625rem 1.25rem; border-radius: 8px; font-weight: 500; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; border: none; font-family: inherit; text-decoration: none; }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--accent); color: white; box-shadow: 0 2px 4px rgba(8, 145, 178, 0.2); }
+    .btn-primary:hover { background: #0e7490; transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid transparent; }
+    .btn-ghost:hover { background: var(--bg-secondary); color: var(--fg); border-color: var(--border); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { background: #059669; }
+    .action-btn { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 0.5rem; border-radius: 6px; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+    .action-btn:hover { background: var(--bg-secondary); color: var(--accent); transform: translateY(-1px); }
+    .action-btn.delete:hover { color: var(--danger); background: #fee2e2; }
+
+    /* --- MODALS --- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; padding: 1rem; }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal { background: var(--card); border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); transform: translateY(20px) scale(0.98); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); max-height: 90vh; display: flex; flex-direction: column; }
+    .modal-overlay.active .modal { transform: translateY(0) scale(1); }
+    .modal-body { padding: 1.5rem; overflow-y: auto; }
+
+    /* --- TOAST --- */
+    .toast-container { position: fixed; top: 1.5rem; right: 1.5rem; z-index: 300; display: flex; flex-direction: column; gap: 0.75rem; pointer-events: none; }
+    .toast { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 0.75rem; min-width: 300px; animation: slideIn 0.3s ease; pointer-events: all; border-left: 4px solid transparent; }
+    .toast.success { border-left-color: var(--success); }
+    .toast.error { border-left-color: var(--danger); }
+
+    /* ---- JOB CARD OVERLAY (A4 paper) ---- */
+    #jobCardOverlay {
+      z-index: 250;
+      background-color: #525659;
+      overflow: hidden;
+      display: none;
+      flex-direction: column;
+    }
+    #jobCardOverlay.active { display: flex; }
+
+    .job-card-scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2rem 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .close-job-view {
+      position: absolute; top: 20px; right: 20px; z-index: 260;
+      background: white; border-radius: 50%; width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s;
+    }
+    .close-job-view:hover { transform: scale(1.1); }
+
+    .paper {
+      background-color: var(--paper-color);
+      width: 210mm;
+      min-height: 297mm;
+      height: 297mm;
+      padding: 15mm;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      position: relative;
+      margin-bottom: 0;
+      font-family: 'Roboto', sans-serif;
+      box-sizing: border-box;
+    }
+
+    .job-card-header {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      border-bottom: 3px solid var(--primary-color);
+      padding-bottom: 15px; margin-bottom: 20px;
+    }
+    .logo-area { display: flex; align-items: center; gap: 15px; }
+    .dit-logo { width: 50px; height: 50px; }
+    .title-area { text-align: center; flex-grow: 1; margin-bottom: 5px; }
+    .title-area h3 { font-size: 10px; margin-bottom: 2px; color: #555; letter-spacing: 0.5px; }
+    .title-area h1 { font-size: 22px; font-weight: 900; letter-spacing: 1px; color: var(--primary-color); line-height: 1.1; }
+    .job-number-area { text-align: right; }
+    .job-label { font-size: 10px; font-weight: 700; color: #555; margin-bottom: 2px; }
+    .job-number-display { font-family: 'Courier Prime', monospace; font-size: 20px; font-weight: bold; color: var(--accent-color); border: 2px solid var(--primary-color); padding: 2px 10px; background: #fff; line-height: 1; }
+    .job-number-input { display: none; font-family: 'Courier Prime', monospace; font-size: 20px; font-weight: bold; color: var(--accent-color); border: 2px solid var(--accent-color); padding: 2px 6px; background: #fff; line-height: 1; width: 70px; text-align: center; outline: none; }
+    .edit-jobnum-btn { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; flex-shrink: 0; transition: all 0.2s; }
+    .edit-jobnum-btn:hover { background: var(--primary-color); color: #fff; }
+
+    fieldset { border: 1px solid #000; margin: 0 0 10px 0; padding: 8px; border-radius: 2px; }
+    legend { background-color: var(--primary-color); color: #fff; padding: 2px 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; border-radius: 2px; }
+    .form-grid { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .form-grid td { padding: 4px 2px; vertical-align: middle; }
+    .label-col { width: 22%; background-color: #f0f0f0; font-weight: 600; font-size: 10px; padding-left: 8px !important; text-transform: uppercase; border-right: 1px solid #ddd; color: #333; }
+    .paper input[type="text"], .paper input[type="date"], .paper textarea, .paper select { width: 100%; border: none; border-bottom: 1px dotted #777; background: transparent; font-family: 'Roboto', sans-serif; font-size: 12px; padding: 4px; outline: none; color: #000; }
+    .paper input[type="text"]:focus, .paper input[type="date"]:focus, .paper textarea:focus { border-bottom: 2px solid var(--accent-color); background-color: rgba(37, 99, 235, 0.05); }
+    .paper textarea { resize: none; height: 35px; border: 1px dotted #999; }
+    .checkbox-group { display: flex; gap: 10px; align-items: center; height: 100%; flex-wrap: wrap; }
+    .custom-check { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 12px; }
+    .custom-check input { cursor: pointer; accent-color: var(--accent-color); width: 14px; height: 14px; }
+    .signature-block { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
+    .sig-label { font-weight: 600; font-size: 11px; white-space: nowrap; }
+
+    .card-actions {
+      background: rgba(255,255,255,0.97);
+      border-top: 1px solid var(--border);
+      padding: 1.25rem 2rem;
+      margin-top: 12px;
+      margin-bottom: 2rem;
+      width: 210mm;
+      max-width: 100%;
+      border-radius: 0 0 10px 10px;
+      display: flex; justify-content: center; gap: 1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+      box-sizing: border-box;
+      z-index: 260;
+      position: relative;
+    }
+
+    /* ---- PRINT STYLES ---- */
+    @media print {
+      @page { size: A4; margin: 0; }
+      body { background: white; padding: 0; margin: 0; display: block; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body::after { content: "Restricted"; position: fixed; left: 0; right: 0; bottom: 3mm; text-align: center; font-size: 9pt; font-weight: 700; letter-spacing: 1px; color: #000; z-index: 10000; }
+      .main-wrapper, .main-header, .toast-container, .modal-overlay:not(#jobCardOverlay), .close-job-view, .card-actions, .no-print { display: none !important; }
+      #jobCardOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; padding: 0; display: block !important; overflow: visible; z-index: 9999; }
+      .job-card-scroll-area { display: block; padding: 0; overflow: visible; }
+      .paper { box-shadow: none; margin: 0; width: 210mm; height: 297mm; padding: 10mm !important; border: none; overflow: hidden !important; page-break-after: avoid; position: absolute; top: 0; left: 0; }
+      .job-card-header { margin-bottom: 10px !important; padding-bottom: 10px !important; }
+      .job-card-header h1 { font-size: 18px !important; }
+      .job-card-header h3 { font-size: 9px !important; }
+      .dit-logo { width: 35px !important; height: 35px !important; }
+      .job-number-display { font-size: 14px !important; padding: 1px 6px !important; }
+      fieldset { margin-bottom: 6px !important; padding: 4px !important; border: 1px solid #000; page-break-inside: avoid; }
+      legend { font-size: 9px !important; padding: 0px 4px !important; border: 1px solid #000; background: #fff !important; color: #000 !important; }
+      .form-grid { font-size: 11px !important; line-height: 1.3; }
+      .form-grid td { padding: 2px 2px !important; vertical-align: middle; }
+      .label-col { font-size: 9px !important; padding-left: 4px !important; width: 22%; background-color: transparent !important; color: #000 !important; border: none; }
+      .paper input[type="text"], .paper input[type="date"], .paper textarea { border: none !important; border-bottom: 1px solid #000 !important; background-color: transparent !important; font-size: 11px !important; height: auto; padding: 1px 2px !important; line-height: 1.3; }
+      .paper textarea { height: 28px !important; resize: none; overflow: hidden; }
+    }
+
+    /* ===== Nav Dropdown ===== */
+    .nav-dropdown-wrap { position: relative; display: inline-block; }
+    .nav-toggle-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--accent); border: 1px solid var(--accent); border-radius: 8px; font-family: inherit; font-size: 0.875rem; font-weight: 600; color: #fff; cursor: pointer; transition: all 0.2s; }
+    .nav-toggle-btn:hover { background: #0e7490; border-color: #0e7490; }
+    .nav-dropdown-menu { position: absolute; top: calc(100% + 8px); left: 0; min-width: 210px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px -4px rgba(15,23,42,0.12); padding: 6px; z-index: 999; opacity: 0; visibility: hidden; transform: translateY(-6px); transition: all 0.18s ease; }
+    .nav-dropdown-wrap.open .nav-dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+    .nav-dropdown-profile { display: flex; align-items: center; gap: 10px; padding: 8px 10px 12px 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+    .nav-dropdown-avatar { width: 36px; height: 36px; border-radius: 8px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
+    .nav-dropdown-profile-name { font-weight: 700; font-size: 0.9rem; color: var(--fg); line-height: 1.2; }
+    .nav-dropdown-profile-role { font-size: 0.72rem; color: var(--muted); }
+    .nav-dropdown-item { display: flex; align-items: center; width: 100%; padding: 8px 12px; border-radius: 7px; font-family: inherit; font-size: 0.875rem; font-weight: 500; color: var(--fg); text-decoration: none; background: transparent; border: none; cursor: pointer; transition: background 0.15s; text-align: left; }
+    .nav-dropdown-item:hover { background: var(--bg-secondary); }
+    .nav-dropdown-item.active { background: var(--accent-light); color: var(--accent); font-weight: 700; }
+    .nav-dropdown-item.active::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-left: auto; flex-shrink: 0; }
+    .nav-dropdown-divider { height: 1px; background: var(--border); margin: 4px 4px; }
+    .nav-dropdown-item.logout { color: var(--danger); }
+    .nav-dropdown-item.logout:hover { background: #fee2e2; }
+    .module-background { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; background: radial-gradient(circle at 0% 0%, #e0e7ff 0%, #f8fafc 50%); }
+    .module-background canvas { width: 100%; height: 100%; display: block; }
+  </style>
+  <link rel="stylesheet" href="responsive.css" />
+</head>
+<body>
+  <script>try { if (!JSON.parse(sessionStorage.getItem('loggedInUser') || 'null')) window.location.replace('index.html'); } catch (e) { sessionStorage.clear(); window.location.replace('index.html'); }</script>
+  <div class="module-background" aria-hidden="true"><canvas id="moduleBgCanvas"></canvas></div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- DASHBOARD WRAPPER -->
+  <div class="main-wrapper">
+    <header class="main-header">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <div>
+          <div style="font-size:2rem; font-weight:700; color:var(--fg); line-height:1.2;">Job Management</div>
+          <div style="font-size:1rem; color:var(--muted);">Technical maintenance &amp; repair records</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem; background:var(--bg-secondary); border:1px solid var(--border); padding:0.5rem 0.75rem; border-radius:999px; font-size:0.85rem; color:var(--muted);">
+          <span>Hi:</span>
+          <strong id="displayUsername" style="color:var(--fg);">Guest</strong>
+        </div>
+        <div class="nav-dropdown-wrap" id="navDropdownWrap">
+          <button type="button" class="nav-toggle-btn" id="navToggleBtn" onclick="toggleNavDropdown(event)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+            Navigate
+          </button>
+          <div class="nav-dropdown-menu" id="navDropdownMenu">
+            <div class="nav-dropdown-profile">
+              <div class="nav-dropdown-avatar" id="navDropdownAvatar">DIT</div>
+              <div>
+                <div class="nav-dropdown-profile-name" id="navDropdownName">Stores System</div>
+                <div class="nav-dropdown-profile-role" id="navDropdownRole">User</div>
+              </div>
+            </div>
+            <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
+            <a href="clothing.html" class="nav-dropdown-item">Clothing</a>
+            <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
+            <a href="pay-stores.html" class="nav-dropdown-item">Pay Stores</a>
+            <a href="jobscard.html" class="nav-dropdown-item active">Jobs Card</a>
+            <a href="personnel.html" class="nav-dropdown-item">Personnel</a>
+            <a href="reports.html" class="nav-dropdown-item">Reports</a>
+            <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display:none">Admin Panel</a>
+            <div class="nav-dropdown-divider"></div>
+            <button type="button" class="nav-dropdown-item logout" onclick="logoutUser()">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="content-area">
+
+        <!-- Controls Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+          <button class="btn btn-primary" onclick="openNewJobCard()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            New Job Card
+          </button>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="status-grid">
+          <div class="status-card" style="border-left:4px solid var(--muted);">
+            <span class="status-count" id="jobTotal">0</span>
+            <div class="status-label">Total Jobs</div>
+          </div>
+          <div class="status-card" style="border-left:4px solid #7e22ce;">
+            <span class="status-count" id="jobUncompleted" style="color:#7e22ce">0</span>
+            <div class="status-label">Uncompleted</div>
+          </div>
+          <div class="status-card" style="border-left:4px solid #15803d;">
+            <span class="status-count" id="jobCompleted" style="color:#15803d">0</span>
+            <div class="status-label">Completed</div>
+          </div>
+        </div>
+
+        <!-- Jobs Table -->
+        <div class="table-container">
+          <div class="table-header">
+            <div style="font-size:1.1rem; font-weight:600;">Jobs Records</div>
+            <div class="search-wrapper">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="jobSearchInput" class="search-input" placeholder="Search job, description..." onkeyup="handleJobSearch()">
+            </div>
+          </div>
+          <div class="table-scroll-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>SRL</th>
+                  <th>Job No.</th>
+                  <th>Equipment Model</th>
+                  <th>Serial No.</th>
+                  <th>Unit/Dept</th>
+                  <th>Assigned To</th>
+                  <th>Date In</th>
+                  <th>Status</th>
+                  <th>User ID</th>
+                  <th style="text-align:center; width:100px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="jobsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- QUICK STATUS EDIT MODAL -->
+  <div class="modal-overlay" id="quickEditModal">
+    <div class="modal">
+      <div style="padding:1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:1.25rem; font-weight:600;">Update Job Status</h3>
+        <button class="action-btn" onclick="closeQuickEditModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="quickEditForm" onsubmit="handleQuickEditSubmit(event)" style="padding:1.5rem;">
+        <input type="hidden" id="statusEditJobId">
+        <div style="margin-bottom:1.25rem;">
+          <label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.5rem;">Status</label>
+          <select id="editJobStatus" style="width:100%; padding:0.75rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-family:inherit;">
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Collected">Collected</option>
+            <option value="On Hold">On Hold</option>
+          </select>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+          <button type="button" class="btn btn-ghost" onclick="closeQuickEditModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DETAILED JOB CARD OVERLAY (A4) -->
+  <div class="modal-overlay" id="jobCardOverlay">
+    <div class="job-card-scroll-area">
+      <div class="close-job-view" onclick="closeJobCardView()" title="Close">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+
+      <div class="paper">
+        <form id="jobCardForm" onsubmit="event.preventDefault();">
+          <input type="hidden" id="editJobId">
+
+          <!-- 1. Header -->
+          <header class="job-card-header">
+            <div class="logo-area">
+              <svg class="dit-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="48" stroke="black" stroke-width="4"/>
+                <path d="M50 20V80M20 50H80" stroke="black" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="50" cy="50" r="15" stroke="black" stroke-width="4"/>
+              </svg>
+              <div style="display:flex; flex-direction:column;">
+                <span style="font-weight:700; font-size:14px;">DIT</span>
+                <span style="font-size:10px; color:#666;">Technical Dept.</span>
+              </div>
+            </div>
+            <div class="title-area">
+              <h3>GHQ (DIT TECHNICAL DEPARTMENT)</h3>
+              <h3>COMPUTER MAINTENANCE / REPAIR FORM</h3>
+              <h1>JOB CARD</h1>
+            </div>
+            <div class="job-number-area">
+              <span class="job-label">Job Card #</span>
+              <div style="display:flex; align-items:center; gap:6px; justify-content:flex-end;">
+                <span id="jobNumber" class="job-number-display"></span>
+                <input type="text" id="jobNumberInput" class="job-number-input" maxlength="3" inputmode="numeric" placeholder="001" onblur="confirmManualJobNumber()" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmManualJobNumber();}">
+                <button type="button" id="editJobNumBtn" class="edit-jobnum-btn no-print" onclick="enableManualJobNumber()" title="Manually set job card number">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <!-- 2. Equipment Info -->
+          <fieldset>
+            <legend>Equipment Information</legend>
+            <table class="form-grid">
+              <tr><td class="label-col">Date</td><td><input type="date" id="eqDate" required></td></tr>
+              <tr><td class="label-col">Serial No</td><td colspan="3"><input type="text" id="eqSerial" placeholder="Enter Serial Number..."></td></tr>
+              <tr><td class="label-col">Equipment Model</td><td colspan="3"><input type="text" id="eqModel" placeholder="Model Name / Accessories" required></td></tr>
+              <tr>
+                <td class="label-col">DVD/CD ROM</td>
+                <td colspan="3">
+                  <div class="checkbox-group">
+                    <label class="custom-check"><input type="checkbox" name="dvd" value="Yes"> Yes</label>
+                    <label class="custom-check"><input type="checkbox" name="dvd" value="No"> No</label>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="label-col">Memory Type</td>
+                <td>
+                  <div class="checkbox-group">
+                    <label class="custom-check"><input type="checkbox" name="mem" value="DDR"> DDR</label>
+                    <label class="custom-check"><input type="checkbox" name="mem" value="DDR2"> DDR2</label>
+                    <label class="custom-check"><input type="checkbox" name="mem" value="DDR3"> DDR3</label>
+                    <label class="custom-check"><input type="checkbox" name="mem" value="DDR4"> DDR4</label>
+                  </div>
+                </td>
+                <td class="label-col">Memory Size</td>
+                <td><input type="text" id="memSize" placeholder="e.g. 8GB"></td>
+              </tr>
+              <tr>
+                <td class="label-col">HDD Type</td>
+                <td>
+                  <div class="checkbox-group">
+                    <label class="custom-check"><input type="checkbox" name="hdd" value="SATA"> SATA</label>
+                    <label class="custom-check"><input type="checkbox" name="hdd" value="IDE"> IDE</label>
+                    <label class="custom-check"><input type="checkbox" name="hdd" value="SSD"> SSD</label>
+                  </div>
+                </td>
+                <td class="label-col">HDD Size</td>
+                <td><input type="text" id="hddSize" placeholder="e.g. 500GB"></td>
+              </tr>
+            </table>
+          </fieldset>
+
+          <!-- 3. Printer Info -->
+          <fieldset>
+            <legend>Printer Only (If Applicable)</legend>
+            <table class="form-grid">
+              <tr>
+                <td class="label-col">Model</td><td><input type="text" id="printModel"></td>
+                <td class="label-col">Cartridge Present</td>
+                <td>
+                  <div class="checkbox-group">
+                    <label class="custom-check"><input type="checkbox" name="cart" value="Yes"> Yes</label>
+                    <label class="custom-check"><input type="checkbox" name="cart" value="No"> No</label>
+                  </div>
+                </td>
+              </tr>
+              <tr><td class="label-col">Cartridge Type</td><td colspan="3"><input type="text" id="cartType"></td></tr>
+            </table>
+          </fieldset>
+
+          <!-- 4. Complainant Info -->
+          <fieldset>
+            <legend>Complainant Information</legend>
+            <table class="form-grid">
+              <tr>
+                <td class="label-col">Svc No</td><td><input type="text" id="svcNo"></td>
+                <td class="label-col">Rank</td><td><input type="text" id="rank"></td>
+              </tr>
+              <tr>
+                <td class="label-col">Name (Brought By)</td><td><input type="text" id="compName" required></td>
+                <td class="label-col">Unit/Dept</td><td><input type="text" id="compUnit"></td>
+              </tr>
+              <tr><td class="label-col">Complaint</td><td colspan="3"><textarea id="compComplaint" required></textarea></td></tr>
+              <tr><td class="label-col">Contact Phone #</td><td colspan="3"><input type="text" id="contactPhone"></td></tr>
+            </table>
+            <div class="signature-block" style="margin-top:10px;">
+              <span class="sig-label">Complaint received by:</span>
+              <input type="text" id="receivedBy" placeholder="Receiver Name" style="border-bottom:1px solid #000; font-weight:bold;">
+            </div>
+          </fieldset>
+
+          <!-- 5. Technician Info -->
+          <fieldset>
+            <legend>Technician Information</legend>
+            <table class="form-grid">
+              <thead>
+                <tr>
+                  <th style="width:30%">Assigned Technicians</th>
+                  <th style="width:35%">Diagnosis</th>
+                  <th style="width:35%">Action Taken</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><textarea id="techAssigned"></textarea></td>
+                  <td><textarea id="techDiagnosis"></textarea></td>
+                  <td><textarea id="techAction"></textarea></td>
+                </tr>
+              </tbody>
+            </table>
+          </fieldset>
+
+          <!-- 6. Signing Out -->
+          <fieldset>
+            <legend>Signing Out Information</legend>
+            <div style="margin-bottom:10px; font-weight:bold; font-size:11px; color:#444;">COLLECTOR INFORMATION</div>
+            <table class="form-grid">
+              <tr>
+                <td class="label-col">Svc No</td><td><input type="text" id="colSvcNo"></td>
+                <td class="label-col">Rank</td><td><input type="text" id="colRank"></td>
+              </tr>
+              <tr>
+                <td class="label-col">Name (Collected By)</td><td><input type="text" id="colName"></td>
+                <td class="label-col">Unit</td><td><input type="text" id="colUnit"></td>
+              </tr>
+              <tr>
+                <td class="label-col">Date Collected</td><td><input type="date" id="dateCollected"></td>
+                <td class="label-col">Contact Phone #</td><td><input type="text" id="colContact"></td>
+              </tr>
+            </table>
+            <div class="signature-block">
+              <span class="sig-label">Signed out by:</span>
+              <input type="text" id="signedOutBy" placeholder="Name" style="border-bottom:1px solid #000;">
+            </div>
+          </fieldset>
+
+          <!-- 7. Supervisor Remark -->
+          <fieldset>
+            <legend>Supervisor's Remark</legend>
+            <table class="form-grid">
+              <tr>
+                <th style="width:25%">Names</th>
+                <th style="width:20%">Signature(s)</th>
+                <th style="width:25%">Date &amp; Time</th>
+                <th style="width:30%">Remarks</th>
+              </tr>
+              <tr>
+                <td><input type="text" id="supName"></td>
+                <td></td>
+                <td><input type="date" id="supDateTime"></td>
+                <td><input type="text" id="supRemarks"></td>
+              </tr>
+            </table>
+          </fieldset>
+        </form>
+      </div>
+
+      <!-- Actions Bar -->
+      <div class="card-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeJobCardView()">Cancel</button>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn btn-primary" onclick="window.print()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            Print
+          </button>
+          <button type="button" class="btn btn-danger" onclick="resetJobCardForm()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Clear
+          </button>
+          <button type="button" class="btn btn-success" onclick="saveJobCardData()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            <span id="saveBtnText">Save Job</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="neon-storage.js"></script>
+  <script>
+    /* =====================================================
+       NEON STORAGE — single source of truth for persistence
+       ===================================================== */
+    const memoryStore = window.neonStorage;
+
+    /* =====================================================
+       STORAGE KEYS
+       ===================================================== */
+    const JOBS_KEY        = 'dit_jobs_data';
+    const COUNTER_KEY     = 'ditJobCounter';
+    const ACTIVITY_KEY    = 'dit_activity_log_v1';
+
+    /* =====================================================
+       STATE
+       ===================================================== */
+    let jobs = [];
+    let jobCounter = 1;
+
+    /* =====================================================
+       INIT
+       ===================================================== */
+    window.addEventListener('load', function() {
+      // Access control
+      var _loginUser = null;
+      try { _loginUser = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null'); } catch(e) {}
+      if (!_loginUser) { window.location.href = 'index.html'; return; }
+      updateLoggedInUserDisplay(_loginUser);
+      var _isAdmin = _loginUser.role === 'Admin' || _loginUser.role === 'Administrator';
+      var _mods = _loginUser.modules || {};
+      var _jcPriv = _mods.jobscard || {};
+      if (!_isAdmin && !_jcPriv.view) { window.location.href = 'dashboard.html'; return; }
+      initSystem();
+    });
+
+    function getCurrentUserId() {
+      try {
+        var u = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null');
+        return u ? (u.username || u.email || u.fullName || 'Unknown user') : 'Unknown user';
+      } catch(e) { return 'Unknown user'; }
+    }
+
+    function updateLoggedInUserDisplay(user) {
+      var loginUser = user;
+      if (!loginUser) {
+        try { loginUser = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null'); } catch(e) {}
+      }
+      var name = (loginUser && (loginUser.fullName || loginUser.username || loginUser.email)) || 'Guest';
+      var displayEl = document.getElementById('displayUsername');
+      if (displayEl) displayEl.textContent = name;
+      var navNameEl = document.getElementById('navDropdownName');
+      if (navNameEl) navNameEl.textContent = name;
+    }
+
+    /* =====================================================
+       LOAD / SAVE via neonStorage
+       ===================================================== */
+    function initSystem() {
+      try {
+        var storedJobs = memoryStore.getItem(JOBS_KEY);
+        if (storedJobs) {
+          jobs = JSON.parse(storedJobs).map(function(job) {
+            return Object.assign({ userId: getCurrentUserId() }, job);
+          });
+        }
+      } catch(e) { jobs = []; }
+
+      try {
+        var storedCounter = memoryStore.getItem(COUNTER_KEY);
+        jobCounter = storedCounter ? parseInt(storedCounter, 10) : 1;
+        if (isNaN(jobCounter) || jobCounter < 1) jobCounter = 1;
+      } catch(e) { jobCounter = 1; }
+
+      renderJobsTable();
+    }
+
+    function saveToStorage() {
+      try { memoryStore.setItem(JOBS_KEY, JSON.stringify(jobs)); } catch(e) { showToast('Storage error — data not saved!', 'error'); }
+      try { memoryStore.setItem(COUNTER_KEY, String(jobCounter)); } catch(e) {}
+    }
+
+    function logActivity(action, detail) {
+      try {
+        var u = null;
+        try { u = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null'); } catch(e) {}
+        var user = u ? (u.username || u.fullName || u.email || 'Unknown user') : 'Unknown user';
+        var log = [];
+        try { var raw = memoryStore.getItem(ACTIVITY_KEY); log = raw ? JSON.parse(raw) : []; } catch(e) {}
+        log.unshift({ module: 'jobscard', action: action, detail: detail, user: user, date: new Date().toISOString() });
+        if (log.length > 500) log = log.slice(0, 500);
+        memoryStore.setItem(ACTIVITY_KEY, JSON.stringify(log));
+      } catch(e) {}
+    }
+
+    /* =====================================================
+       TABLE RENDERING
+       ===================================================== */
+    function renderJobsTable() {
+      var tbody = document.getElementById('jobsTableBody');
+      tbody.innerHTML = '';
+
+      // Update stats
+      document.getElementById('jobTotal').textContent = jobs.length;
+      document.getElementById('jobCompleted').textContent = jobs.filter(function(j){ return j.status === 'Completed'; }).length;
+      document.getElementById('jobUncompleted').textContent = jobs.filter(function(j){ return j.status !== 'Completed' && j.status !== 'Collected'; }).length;
+
+      var query = document.getElementById('jobSearchInput').value.toLowerCase();
+      var filteredJobs = jobs.filter(function(j) {
+        return (!j.title || j.title.toLowerCase().includes(query)) ||
+               (!j.no    || j.no.toLowerCase().includes(query))    ||
+               (!j.desc  || j.desc.toLowerCase().includes(query));
+      });
+
+      if (filteredJobs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:3rem; color:var(--muted);">No jobs found. Click "New Job Card" to begin.</td></tr>';
+        return;
+      }
+
+      filteredJobs.forEach(function(j, index) {
+        var tr = document.createElement('tr');
+        var userId = j.userId || getCurrentUserId();
+        var badgeClass = 'badge-pending';
+        if (j.status === 'In Progress') badgeClass = 'badge-progress';
+        if (j.status === 'Completed')   badgeClass = 'badge-completed';
+        if (j.status === 'Collected')   badgeClass = 'badge-collected';
+        if (j.status === 'On Hold')     badgeClass = 'badge-hold';
+        tr.innerHTML =
+          '<td style="font-family:monospace; color:var(--muted);">' + (index + 1) + '</td>' +
+          '<td style="font-family:\'Courier Prime\',monospace; font-weight:600; color:var(--accent);">' + j.no + '</td>' +
+          '<td style="font-weight:600;">' + (j.title || '') + '</td>' +
+          '<td>' + (j.serial || '-') + '</td>' +
+          '<td>' + (j.unit || '-') + '</td>' +
+          '<td>' + (j.assignedTo || '-') + '</td>' +
+          '<td>' + (j.dateIn || '-') + '</td>' +
+          '<td><span class="badge ' + badgeClass + '">' + j.status + '</span></td>' +
+          '<td style="font-family:monospace; color:var(--muted);">' + userId + '</td>' +
+          '<td style="text-align:center; white-space:nowrap;">' +
+            '<button class="action-btn" onclick="viewJobCard(' + j.id + ')" title="View Details">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>' +
+            '</button>' +
+            '<button class="action-btn delete" onclick="deleteJob(' + j.id + ')" title="Delete Job">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>' +
+            '</button>' +
+          '</td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    function handleJobSearch() { renderJobsTable(); }
+
+    /* =====================================================
+       DELETE
+       ===================================================== */
+    function deleteJob(id) {
+      if (confirm('Are you sure you want to delete this Job Card? This action cannot be undone.')) {
+        var deletedJob = jobs.find(function(j){ return j.id === id; });
+        jobs = jobs.filter(function(j){ return j.id !== id; });
+        saveToStorage();
+        renderJobsTable();
+        logActivity('Job card deleted', 'Job #' + (deletedJob ? deletedJob.no : id) + (deletedJob ? ' — ' + deletedJob.title : ''));
+        showToast('Job Card deleted', 'success');
+      }
+    }
+
+    /* =====================================================
+       JOB CARD FORM
+       ===================================================== */
+    function populateForm(data) {
+      document.getElementById('jobNumber').textContent = data.jobNo;
+      document.getElementById('eqDate').value     = data.eqDate;
+      document.getElementById('eqSerial').value   = data.eqSerial;
+      document.getElementById('eqModel').value    = data.eqModel;
+      document.getElementById('memSize').value    = data.memSize;
+      document.getElementById('hddSize').value    = data.hddSize;
+      document.getElementById('printModel').value = data.printModel;
+      document.getElementById('cartType').value   = data.cartType;
+      document.getElementById('svcNo').value      = data.svcNo;
+      document.getElementById('rank').value       = data.rank;
+      document.getElementById('compName').value   = data.compName;
+      document.getElementById('compUnit').value   = data.compUnit;
+      document.getElementById('compComplaint').value = data.complaint;
+      document.getElementById('contactPhone').value  = data.contactPhone;
+      document.getElementById('receivedBy').value    = data.receivedBy;
+      document.getElementById('techAssigned').value  = data.techAssigned;
+      document.getElementById('techDiagnosis').value = data.techDiagnosis;
+      document.getElementById('techAction').value    = data.techAction;
+      document.getElementById('colSvcNo').value      = data.colSvcNo;
+      document.getElementById('colRank').value       = data.colRank;
+      document.getElementById('colName').value       = data.colName;
+      document.getElementById('colUnit').value       = data.colUnit;
+      document.getElementById('dateCollected').value = data.dateCollected;
+      document.getElementById('colContact').value    = data.colContact;
+      document.getElementById('signedOutBy').value   = data.signedOutBy;
+      document.getElementById('supName').value       = data.supName;
+      document.getElementById('supDateTime').value   = data.supDateTime;
+      document.getElementById('supRemarks').value    = data.supRemarks;
+      setCheckboxes('mem', data.memType);
+      setCheckboxes('hdd', data.hddType);
+      setCheckboxes('dvd', data.dvd);
+      setCheckboxes('cart', data.cart);
+    }
+
+    function viewJobCard(id) {
+      var job = jobs.find(function(j){ return j.id === id; });
+      if (!job || !job.fullData) { showToast('Cannot find detailed data for this job.', 'error'); return; }
+      populateForm(job.fullData);
+      document.getElementById('editJobId').value = job.id;
+      document.getElementById('saveBtnText').textContent = 'Update Job';
+      document.getElementById('jobCardOverlay').classList.add('active');
+    }
+
+    function openNewJobCard() {
+      document.getElementById('jobCardForm').reset();
+      document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.checked = false; });
+      document.getElementById('editJobId').value = '';
+      document.getElementById('saveBtnText').textContent = 'Save Job';
+      generateJobNumber();
+      document.getElementById('eqDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('jobCardOverlay').classList.add('active');
+    }
+
+    function closeJobCardView() {
+      document.getElementById('jobCardOverlay').classList.remove('active');
+    }
+
+    function generateJobNumber() {
+      var now = new Date();
+      var yrShort = String(now.getFullYear()).slice(-2);
+      var num = String(jobCounter).padStart(3, '0');
+      document.getElementById('jobNumber').textContent = 'DIT/TECH/' + num + '/' + yrShort;
+    }
+
+    function enableManualJobNumber() {
+      var span  = document.getElementById('jobNumber');
+      var input = document.getElementById('jobNumberInput');
+      var parts = span.textContent.split('/');
+      input.value = parts.length >= 3 ? parts[2] : '001';
+      span.style.display  = 'none';
+      input.style.display = 'inline-block';
+      input.focus(); input.select();
+    }
+
+    function confirmManualJobNumber() {
+      var span  = document.getElementById('jobNumber');
+      var input = document.getElementById('jobNumberInput');
+      if (input.style.display === 'none') return;
+      var parts  = span.textContent.split('/');
+      var prefix = parts[0] || 'DIT';
+      var mid    = parts[1] || 'TECH';
+      var yr     = parts[3] || String(new Date().getFullYear()).slice(-2);
+      var val = input.value.trim().replace(/\D/g, '');
+      if (!val) val = parts[2] || '001';
+      val = val.padStart(3, '0');
+      span.textContent    = prefix + '/' + mid + '/' + val + '/' + yr;
+      span.style.display  = 'inline-block';
+      input.style.display = 'none';
+      var numericVal = parseInt(val, 10);
+      if (!isNaN(numericVal) && numericVal >= jobCounter) jobCounter = numericVal + 1;
+    }
+
+    function resetJobCardForm() {
+      if (confirm('Clear all fields?')) {
+        document.getElementById('jobCardForm').reset();
+        document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.checked = false; });
+        document.getElementById('editJobId').value = '';
+        document.getElementById('saveBtnText').textContent = 'Save Job';
+        jobCounter++;
+        generateJobNumber();
+        document.getElementById('eqDate').value = new Date().toISOString().split('T')[0];
+      }
+    }
+
+    function getCheckboxValues(name) {
+      return Array.from(document.querySelectorAll('input[name="' + name + '"]:checked')).map(function(cb){ return cb.value; }).join(', ') || '-';
+    }
+
+    function setCheckboxes(name, valuesStr) {
+      if (!valuesStr || valuesStr === '-') return;
+      var vals = valuesStr.split(', ');
+      document.querySelectorAll('input[name="' + name + '"]').forEach(function(cb){
+        cb.checked = vals.includes(cb.value);
+      });
+    }
+
+    function saveJobCardData() {
+      var model     = document.getElementById('eqModel').value.trim();
+      var name      = document.getElementById('compName').value.trim();
+      var complaint = document.getElementById('compComplaint').value.trim();
+      if (!model || !name || !complaint) { showToast('Model, Name, and Complaint are required!', 'error'); return; }
+
+      var jobNo        = document.getElementById('jobNumber').textContent;
+      var dateIn       = document.getElementById('eqDate').value;
+      var editId       = document.getElementById('editJobId').value;
+      var signedOutBy  = document.getElementById('signedOutBy').value.trim();
+      var supName      = document.getElementById('supName').value.trim();
+      var techAction   = document.getElementById('techAction').value.trim();
+
+      // Intelligent status logic
+      var newStatus = 'Pending';
+      if (editId) {
+        var current = jobs.find(function(j){ return j.id == editId; });
+        if (current) newStatus = current.status;
+      }
+      if (signedOutBy)     newStatus = 'Collected';
+      else if (supName)    newStatus = 'Completed';
+      else if (techAction) newStatus = 'In Progress';
+
+      var fullData = {
+        jobNo: jobNo, eqDate: dateIn,
+        eqSerial:     document.getElementById('eqSerial').value,
+        eqModel:      model,
+        memType:      getCheckboxValues('mem'),
+        memSize:      document.getElementById('memSize').value,
+        hddType:      getCheckboxValues('hdd'),
+        hddSize:      document.getElementById('hddSize').value,
+        dvd:          getCheckboxValues('dvd'),
+        printModel:   document.getElementById('printModel').value,
+        cart:         getCheckboxValues('cart'),
+        cartType:     document.getElementById('cartType').value,
+        svcNo:        document.getElementById('svcNo').value,
+        rank:         document.getElementById('rank').value,
+        compName:     name,
+        compUnit:     document.getElementById('compUnit').value,
+        complaint:    complaint,
+        contactPhone: document.getElementById('contactPhone').value,
+        receivedBy:   document.getElementById('receivedBy').value,
+        techAssigned: document.getElementById('techAssigned').value,
+        techDiagnosis:document.getElementById('techDiagnosis').value,
+        techAction:   techAction,
+        colSvcNo:     document.getElementById('colSvcNo').value,
+        colRank:      document.getElementById('colRank').value,
+        colName:      document.getElementById('colName').value,
+        colUnit:      document.getElementById('colUnit').value,
+        dateCollected:document.getElementById('dateCollected').value,
+        colContact:   document.getElementById('colContact').value,
+        signedOutBy:  signedOutBy,
+        supName:      supName,
+        supDateTime:  document.getElementById('supDateTime').value,
+        supRemarks:   document.getElementById('supRemarks').value
+      };
+
+      var currentUserId = getCurrentUserId();
+
+      if (editId) {
+        var idx = jobs.findIndex(function(j){ return j.id == editId; });
+        if (idx !== -1) {
+          jobs[idx].no         = jobNo;
+          jobs[idx].title      = model;
+          jobs[idx].serial     = fullData.eqSerial;
+          jobs[idx].desc       = complaint;
+          jobs[idx].unit       = fullData.compUnit;
+          jobs[idx].assignedTo = fullData.techAssigned;
+          jobs[idx].dateIn     = dateIn;
+          jobs[idx].status     = newStatus;
+          jobs[idx].userId     = currentUserId;
+          jobs[idx].fullData   = fullData;
+          logActivity('Job card updated', jobNo + ' — ' + model + ' (' + newStatus + ')');
+          showToast('Job Card Updated Successfully!', 'success');
+        }
+      } else {
+        jobs.unshift({
+          id: Date.now(), no: jobNo, title: model,
+          serial: fullData.eqSerial, desc: complaint,
+          unit: fullData.compUnit, assignedTo: fullData.techAssigned,
+          dateIn: dateIn, status: newStatus,
+          userId: currentUserId, fullData: fullData
+        });
+        jobCounter++;
+        logActivity('Job card created', jobNo + ' — ' + model + ' · ' + complaint.slice(0, 60));
+        showToast('New Job Card Saved!', 'success');
+      }
+
+      saveToStorage();
+      renderJobsTable();
+      closeJobCardView();
+    }
+
+    /* =====================================================
+       QUICK STATUS EDIT
+       ===================================================== */
+    function closeQuickEditModal() {
+      document.getElementById('quickEditModal').classList.remove('active');
+    }
+
+    function handleQuickEditSubmit(event) {
+      event.preventDefault();
+      var id        = document.getElementById('statusEditJobId').value;
+      var newStatus = document.getElementById('editJobStatus').value;
+      var job = jobs.find(function(j){ return j.id == id; });
+      if (job) {
+        job.status = newStatus;
+        saveToStorage();
+        renderJobsTable();
+        logActivity('Job status updated', job.no + ' — ' + job.title + ' \u2192 ' + newStatus);
+        showToast('Status updated to ' + newStatus, 'success');
+      }
+      closeQuickEditModal();
+    }
+
+    /* =====================================================
+       TOAST
+       ===================================================== */
+    function showToast(message, type) {
+      type = type || 'success';
+      var container = document.getElementById('toastContainer');
+      var toast = document.createElement('div');
+      toast.className = 'toast ' + type;
+      var icon = type === 'success'
+        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+      toast.innerHTML = icon + '<span>' + message + '</span>';
+      container.appendChild(toast);
+      setTimeout(function() {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(function(){ toast.remove(); }, 300);
+      }, 3000);
+    }
+
+    /* =====================================================
+       NAV DROPDOWN
+       ===================================================== */
+    function toggleNavDropdown(e) {
+      e.stopPropagation();
+      document.getElementById('navDropdownWrap').classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      var wrap = document.getElementById('navDropdownWrap');
+      if (wrap && !wrap.contains(e.target)) wrap.classList.remove('open');
+    });
+    function logoutUser() {
+      // Professional confirm dialog
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+      overlay.innerHTML = '<div style="background:var(--card,#fff);border:1px solid var(--border,#e2e8f0);border-radius:16px;padding:28px;max-width:380px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,0.18);text-align:center"><div style="font-size:1.1rem;font-weight:700;margin-bottom:8px">Confirm Logout</div><div style="font-size:0.88rem;color:var(--muted,#64748b);margin-bottom:22px">Are you sure you want to log out?</div><div style="display:flex;gap:10px;justify-content:center"><button id="_jcCancelBtn" style="padding:10px 22px;border-radius:8px;border:1px solid var(--border,#e2e8f0);background:#f1f5f9;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer">Cancel</button><button id="_jcLogoutBtn" style="padding:10px 22px;border-radius:8px;border:none;background:#ef4444;color:#fff;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer">Logout</button></div></div>';
+      document.body.appendChild(overlay);
+      document.getElementById('_jcCancelBtn').onclick = function(){ overlay.remove(); };
+      document.getElementById('_jcLogoutBtn').onclick = function(){ overlay.remove(); try { sessionStorage.clear(); } catch(e) {} window.location.href = 'index.html'; };
+      overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+    }
+    (function initNav() {
+      var u = null;
+      try { u = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null'); } catch(e) {}
+      if (!u) return;
+      var name = u.username || u.fullName || u.email || 'User';
+      var initials = name.split(' ').map(function(n){ return n[0]; }).join('').toUpperCase().slice(0,2) || 'U';
+      var nameEl   = document.getElementById('navDropdownName');
+      var avatarEl = document.getElementById('navDropdownAvatar');
+      var roleEl   = document.getElementById('navDropdownRole');
+      if (nameEl)   nameEl.textContent   = name;
+      if (avatarEl) avatarEl.textContent = initials;
+      if (roleEl)   roleEl.textContent   = u.role || 'User';
+      if ((u.role === 'Admin' || u.role === 'Administrator') && sessionStorage.getItem('isAdminSession') === 'true') {
+        var ap = document.getElementById('adminPanelNavItem');
+        if (ap) ap.style.display = 'flex';
+      }
+    })();
+  </script>
+  <script src="module-background.js"></script>
+</body>
+</html>
