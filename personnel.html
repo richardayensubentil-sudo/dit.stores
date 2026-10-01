@@ -580,7 +580,13 @@
       try {
         memoryStore.setItem(PERSONNEL_KEY, JSON.stringify(personnel));
       } catch(e) {
-        showToast('error', 'Could not save data. Storage error.');
+        var msg = e && e.message ? e.message : 'unknown error';
+        if (msg.indexOf('413') !== -1 || msg.toLowerCase().indexOf('too large') !== -1) {
+          showToast('error', 'Data too large to save. Archive old records to free space.');
+        } else {
+          showToast('error', 'Save failed: ' + msg.slice(0, 100));
+        }
+        console.error('saveData (personnel) failed:', e);
       }
     }
 

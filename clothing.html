@@ -6066,7 +6066,7 @@
         try {
           memoryStore.setItem(DB_KEY, payload);
         } catch (e) {
-          showToast("Storage full â€” data NOT saved!", "error", 10000);
+          showToast("Save failed — " + ((e && e.message) ? e.message.slice(0, 120) : "storage error"), "error", 10000);
         }
       }
       function recalculateCounters() {

@@ -526,11 +526,20 @@
         }
       }
 
-      /* Load stats after page loads */
-      document.addEventListener('DOMContentLoaded', () => {
+      /* Load stats — always fetches fresh data from Neon first */
+      async function refreshAndLoadStats() {
+        try {
+          await memoryStore.refresh(); // pull latest from Neon, clearing stale cache
+        } catch(e) {
+          console.warn('dashboard: could not refresh from Neon, using cached data:', e.message || e);
+        }
         loadStats();
-        /* Auto-refresh stats every 60 s so numbers stay live */
-        setInterval(loadStats, 60000);
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        refreshAndLoadStats();
+        /* Auto-refresh stats every 60 s so deleted data never lingers */
+        setInterval(refreshAndLoadStats, 60000);
       });
 
       /* ── Reports card for admins ── */

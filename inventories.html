@@ -11142,7 +11142,21 @@ body::after {
             document.addEventListener('DOMContentLoaded', () => { loadState(); initApp(); });
 
             function sortOffices() { if (Array.isArray(state.data.offices)) state.data.offices.sort((a, b) => (a.dept || '').localeCompare(b.dept || '') || (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })); }
-            function saveState() { sortOffices(); memoryStore.setItem(STORAGE_KEY, JSON.stringify(state)); }
+            function saveState() {
+              sortOffices();
+              var payload = JSON.stringify(state);
+              try {
+                memoryStore.setItem(STORAGE_KEY, payload);
+              } catch(e) {
+                var msg = e && e.message ? e.message : 'unknown error';
+                if (msg.indexOf('413') !== -1 || msg.toLowerCase().indexOf('too large') !== -1) {
+                  alert('Inventory data too large to save. Please archive or delete old records to free space.\n\nError: ' + msg.slice(0, 150));
+                } else {
+                  alert('Save failed: ' + msg.slice(0, 150));
+                }
+                console.error('saveState (inventories) failed:', e);
+              }
+            }
 
             function loadState() {
                 let raw = memoryStore.getItem(STORAGE_KEY) || memoryStore.getItem('dit_stores_data_v32');
