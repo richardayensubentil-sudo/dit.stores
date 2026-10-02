@@ -184,7 +184,6 @@
     .nav-toggle-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--accent); border: 1px solid var(--accent); border-radius: 8px; font-family: inherit; font-size: 0.875rem; font-weight: 600; color: #fff; cursor: pointer; transition: all 0.2s; }
     .nav-toggle-btn:hover { background: #0e7490; border-color: #0e7490; color: #fff; }
     .nav-dropdown-menu { position: absolute; top: calc(100% + 8px); left: 0; min-width: 210px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px -4px rgba(15,23,42,0.12); padding: 6px; z-index: 999; opacity: 0; visibility: hidden; transform: translateY(-6px); transition: all 0.18s ease; }
-    .nav-dropdown-wrap.open .nav-dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
     .nav-dropdown-profile { display: flex; align-items: center; gap: 10px; padding: 8px 10px 12px 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
     .nav-dropdown-avatar { width: 36px; height: 36px; border-radius: 8px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
     .nav-dropdown-profile-name { font-weight: 700; font-size: 0.9rem; color: var(--fg); line-height: 1.2; }
@@ -234,19 +233,18 @@
 
   <div class="main-wrapper">
     <header class="main-header">
-      <div style="display:flex; align-items:center; gap:0.75rem;">
+      <div style="display:flex; flex-direction:column; gap:0.35rem;">
         <div>
           <div style="font-size:2rem; font-weight:700; color:var(--fg); line-height:1.2;">Personnel Management</div>
           <div style="font-size:1rem; color:var(--muted);">Manage personnel records &amp; parade state</div>
         </div>
-      </div>
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <div style="display:flex; align-items:center; gap:0.5rem; background:var(--bg-secondary); border:1px solid var(--border); padding:0.5rem 0.75rem; border-radius:999px; font-size:0.85rem; color:var(--muted); white-space:nowrap;">
-          <span>Hi:</span>
-          <strong id="displayUsername" style="color:var(--fg);">Guest</strong>
-        </div>
-        <div class="nav-dropdown-wrap" id="navDropdownWrap">
-          <button type="button" class="nav-toggle-btn" id="navToggleBtn" onclick="toggleNavDropdown(event)">
+        <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:0.4rem; background:var(--bg-secondary); border:1px solid var(--border); padding:0.35rem 0.75rem; border-radius:999px; font-size:0.82rem; color:var(--muted); white-space:nowrap;">
+            <span>Hi:</span>
+            <strong id="displayUsername" style="color:var(--fg);">Guest</strong>
+          </div>
+          <div class="nav-dropdown-wrap" id="navDropdownWrap">
+            <button type="button" class="nav-toggle-btn" id="navToggleBtn" onclick="toggleNavDropdown(event)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="3" y1="6" x2="21" y2="6"></line>
               <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -273,6 +271,14 @@
             <div class="nav-dropdown-divider"></div>
             <button type="button" class="nav-dropdown-item logout" onclick="logoutUser()">Logout</button>
           </div>
+          </div><!-- end nav-dropdown-wrap -->
+        </div><!-- end left flex row -->
+      </div><!-- end left column -->
+      <!-- RIGHT: logout only -->
+      <div style="display:flex; align-items:flex-start; gap:0.75rem; flex-shrink:0;">
+        <button type="button" class="btn btn-ghost" onclick="logoutUser()" style="border:1px solid rgba(232,54,93,0.25);color:#e8365d;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;background:rgba(232,54,93,0.05);font-family:inherit;font-size:0.85rem;white-space:nowrap;">
+          Logout
+        </button>
       </div>
     </header>
 

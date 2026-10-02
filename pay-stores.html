@@ -1449,7 +1449,15 @@
     <div class="container">
       <div class="header">
         <div class="header-left">
-          <div class="nav-dropdown-wrap" id="navDropdownWrap">
+          <div style="margin-bottom:6px;">
+            <span style="font-size:1.5rem;font-weight:700;letter-spacing:-.02em;" id="tableTitle">PAY PRINTING STORES</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:0.4rem;background:var(--surface);border:1px solid var(--border-color);padding:0.3rem 0.75rem;border-radius:999px;font-size:0.82rem;color:var(--text-muted);white-space:nowrap;">
+              <span>Hi:</span>
+              <strong id="displayUserName" style="color:var(--text-main);">User</strong>
+            </div>
+            <div class="nav-dropdown-wrap" id="navDropdownWrap">
             <button type="button" class="nav-toggle-btn" id="navToggleBtn" onclick="toggleNavDropdown(event)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -1477,15 +1485,12 @@
             <div class="nav-dropdown-divider"></div>
             <button type="button" class="nav-dropdown-item logout" onclick="logoutUser()">Logout</button>
           </div>
-          <h2 id="tableTitle">PAY PRINTING STORES</h2>
-        </div>
+          </div><!-- end nav-dropdown-wrap -->
+          </div><!-- end flex row with Hi + Navigate -->
+        </div><!-- end header-left -->
         <div class="header-actions">
-          <div class="user-display">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <strong id="displayUserName">User</strong>
+          <div class="user-display" style="display:none;">
+            <strong id="displayUserNameOld">User</strong>
           </div>
         </div>
       </div>

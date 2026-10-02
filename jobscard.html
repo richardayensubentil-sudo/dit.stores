@@ -290,45 +290,51 @@
   <!-- DASHBOARD WRAPPER -->
   <div class="main-wrapper">
     <header class="main-header">
-      <div style="display:flex; align-items:center; gap:0.75rem;">
+      <!-- LEFT: title + Hi + Navigate -->
+      <div style="display:flex; flex-direction:column; gap:0.35rem;">
         <div>
           <div style="font-size:2rem; font-weight:700; color:var(--fg); line-height:1.2;">Job Management</div>
           <div style="font-size:1rem; color:var(--muted);">Technical maintenance &amp; repair records</div>
         </div>
-      </div>
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <div style="display:flex; align-items:center; gap:0.5rem; background:var(--bg-secondary); border:1px solid var(--border); padding:0.5rem 0.75rem; border-radius:999px; font-size:0.85rem; color:var(--muted);">
-          <span>Hi:</span>
-          <strong id="displayUsername" style="color:var(--fg);">Guest</strong>
-        </div>
-        <div class="nav-dropdown-wrap" id="navDropdownWrap">
-          <button type="button" class="nav-toggle-btn" id="navToggleBtn" onclick="toggleNavDropdown(event)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <line x1="3" y1="12" x2="21" y2="12"></line>
-              <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-            Navigate
-          </button>
-          <div class="nav-dropdown-menu" id="navDropdownMenu">
-            <div class="nav-dropdown-profile">
-              <div class="nav-dropdown-avatar" id="navDropdownAvatar">DIT</div>
-              <div>
-                <div class="nav-dropdown-profile-name" id="navDropdownName">Stores System</div>
-                <div class="nav-dropdown-profile-role" id="navDropdownRole">User</div>
-              </div>
-            </div>
-            <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
-            <a href="clothing.html" class="nav-dropdown-item">Clothing</a>
-            <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
-            <a href="pay-stores.html" class="nav-dropdown-item">Pay Stores</a>
-            <a href="jobscard.html" class="nav-dropdown-item active">Jobs Card</a>
-            <a href="personnel.html" class="nav-dropdown-item">Personnel</a>
-            <a href="reports.html" class="nav-dropdown-item">Reports</a>
-            <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display:none">Admin Panel</a>
-            <div class="nav-dropdown-divider"></div>
-            <button type="button" class="nav-dropdown-item logout" onclick="logoutUser()">Logout</button>
+        <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:0.4rem; background:var(--bg-secondary); border:1px solid var(--border); padding:0.35rem 0.75rem; border-radius:999px; font-size:0.82rem; color:var(--muted); white-space:nowrap;">
+            <span>Hi:</span>
+            <strong id="displayUsername" style="color:var(--fg);">Guest</strong>
           </div>
+          <div class="nav-dropdown-wrap" id="navDropdownWrap">
+            <button type="button" class="nav-toggle-btn" id="navToggleBtn" onclick="toggleNavDropdown(event)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+              Navigate
+            </button>
+            <div class="nav-dropdown-menu" id="navDropdownMenu">
+              <div class="nav-dropdown-profile">
+                <div class="nav-dropdown-avatar" id="navDropdownAvatar">DIT</div>
+                <div>
+                  <div class="nav-dropdown-profile-name" id="navDropdownName">Stores System</div>
+                  <div class="nav-dropdown-profile-role" id="navDropdownRole">User</div>
+                </div>
+              </div>
+              <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
+              <a href="clothing.html" class="nav-dropdown-item">Clothing</a>
+              <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
+              <a href="pay-stores.html" class="nav-dropdown-item">Pay Stores</a>
+              <a href="jobscard.html" class="nav-dropdown-item active">Jobs Card</a>
+              <a href="personnel.html" class="nav-dropdown-item">Personnel</a>
+              <a href="reports.html" class="nav-dropdown-item">Reports</a>
+              <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display:none">Admin Panel</a>
+              <div class="nav-dropdown-divider"></div>
+              <button type="button" class="nav-dropdown-item logout" onclick="logoutUser()">Logout</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- RIGHT: logout only -->
+      <div style="display:flex; align-items:flex-start; flex-shrink:0;">
+        <button type="button" onclick="logoutUser()" style="border:1px solid rgba(232,54,93,0.25);color:#e8365d;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;background:rgba(232,54,93,0.05);font-family:inherit;font-size:0.85rem;white-space:nowrap;">
+          Logout
+        </button>
       </div>
     </header>
 
