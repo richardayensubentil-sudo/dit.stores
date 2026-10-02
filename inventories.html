@@ -784,13 +784,14 @@
             flex: 1;
             margin-left: 280px;
             padding: 24px 28px;
-          width: auto;
-          min-width: 0;
-          max-width: calc(100% - 280px);
+            width: auto;
+            min-width: 0;
+            max-width: calc(100% - 280px);
             position: relative;
             z-index: 1;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;   /* was height:100vh — now grows with content */
+            overflow-x: hidden;  /* was overflow:hidden — now only clips horizontal */
+            overflow-y: auto;    /* allow the whole main area to scroll */
             display: flex;
             flex-direction: column
         }
@@ -1126,7 +1127,9 @@
             overflow-x: auto;
             overflow-y: auto;
             flex: 1;
-            min-height: 0
+            min-height: 0;
+            /* Give table a bounded scroll height now that .main is not height:100vh */
+            max-height: calc(100vh - 280px);
         }
 
         table {
@@ -1721,9 +1724,12 @@
             inset: 0;
             background: var(--overlay);
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;   /* was center — prevents clipping tall modals */
+            overflow-y: auto;          /* allow scrolling when modal is taller than screen */
+            padding: 24px 16px;        /* breathing room so modal never touches edges */
             z-index: 200;
-            backdrop-filter: blur(3px)
+            backdrop-filter: blur(3px);
+            -webkit-overflow-scrolling: touch;
         }
 
         .modal-content {
@@ -1739,7 +1745,9 @@
             box-shadow: 0 24px 48px rgba(0, 0, 0, .1);
             animation: modalIn .3s ease;
             scrollbar-width: thin;
-            scrollbar-color: var(--border-color) transparent
+            scrollbar-color: var(--border-color) transparent;
+            margin: auto;         /* centres vertically when content is short */
+            flex-shrink: 0;
         }
 
         .modal-content::-webkit-scrollbar {
@@ -4068,8 +4076,10 @@
 
             .main {
                 margin-left: 0;
-              padding: 16px;
-              max-width: 100%;
+                padding: 16px;
+                max-width: 100%;
+                min-height: 100vh;
+                overflow-y: auto;
             }
 
             .hamburger {
