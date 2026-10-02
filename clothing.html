@@ -3237,36 +3237,26 @@
             <div class="nav-dropdown-menu no-print" id="navDropdownMenu">
               <div class="nav-dropdown-profile">
                 <div class="nav-dropdown-avatar" id="navDropdownAvatar">DIT</div>
-            <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
-            <a href="clothing.html" class="nav-dropdown-item active">Clothing</a>
-            <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
-            <a href="pay-stores.html" class="nav-dropdown-item">Pay Stores</a>
-            <a href="jobscard.html" class="nav-dropdown-item">Jobs Card</a>
-            <a href="personnel.html" class="nav-dropdown-item">Personnel</a>
-            <a href="reports.html" class="nav-dropdown-item">Reports</a>
-            <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display:none">Admin Panel</a>
-            <div class="nav-dropdown-divider"></div>
+                <div>
+                  <div class="nav-dropdown-profile-name" id="navDropdownName">Stores System</div>
+                  <div class="nav-dropdown-profile-role" id="navDropdownRole">User</div>
+                </div>
+              </div>
+              <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
+              <a href="clothing.html" class="nav-dropdown-item active">Clothing</a>
+              <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
+              <a href="pay-stores.html" class="nav-dropdown-item">Pay Stores</a>
+              <a href="jobscard.html" class="nav-dropdown-item">Jobs Card</a>
+              <a href="personnel.html" class="nav-dropdown-item">Personnel</a>
+              <a href="reports.html" class="nav-dropdown-item">Reports</a>
+              <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display:none">Admin Panel</a>
+              <div class="nav-dropdown-divider"></div>
               <button type="button" class="nav-dropdown-item" id="navThemeToggleItem" onclick="toggleTheme()">
                 <span id="navThemeToggleLabel">Dark Mode</span>
-                <svg class="icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
-                </svg>
-                <svg class="icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none">
-                  <circle cx="12" cy="12" r="5"></circle>
-                  <line x1="12" y1="1" x2="12" y2="3"></line>
-                  <line x1="12" y1="21" x2="12" y2="23"></line>
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                  <line x1="1" y1="12" x2="3" y2="12"></line>
-                  <line x1="21" y1="12" x2="23" y2="12"></line>
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                </svg>
               </button>
               <div class="nav-dropdown-divider"></div>
               <button type="button" class="nav-dropdown-item logout" onclick="logoutUser()">Logout</button>
             </div>
-          </div>
         </div>
         <div class="header-right no-print">
           <div class="user-info">

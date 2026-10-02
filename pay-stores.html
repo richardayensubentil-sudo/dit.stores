@@ -1459,8 +1459,13 @@
               Navigate
             </button>
             <div class="nav-dropdown-menu" id="navDropdownMenu">
-              <div class="nav-dropdown-profile">
-                <div class="nav-dropdown-avatar">DIT</div>
+            <div class="nav-dropdown-profile">
+              <div class="nav-dropdown-avatar" id="navDropdownAvatar">DIT</div>
+              <div>
+                <div class="nav-dropdown-profile-name" id="navDropdownName">Stores System</div>
+                <div class="nav-dropdown-profile-role" id="navDropdownRole">User</div>
+              </div>
+            </div>
             <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
             <a href="clothing.html" class="nav-dropdown-item">Clothing</a>
             <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
@@ -1470,8 +1475,7 @@
             <a href="reports.html" class="nav-dropdown-item">Reports</a>
             <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display:none">Admin Panel</a>
             <div class="nav-dropdown-divider"></div>
-              <a href="dashboard.html" class="nav-dropdown-item logout" onclick="return handleLogout(event);">Logout</a>
-            </div>
+            <button type="button" class="nav-dropdown-item logout" onclick="logoutUser()">Logout</button>
           </div>
           <h2 id="tableTitle">PAY PRINTING STORES</h2>
         </div>
