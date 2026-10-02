@@ -69,12 +69,18 @@
 
       * { margin:0; padding:0; box-sizing:border-box; }
 
+      html {
+        height: 100%;
+        overflow-y: scroll; /* always show scrollbar — prevents layout shift */
+      }
+
       body {
         font-family:"DM Sans",sans-serif;
         background:var(--bg);
         color:var(--fg);
-        min-height:100vh;
+        min-height:100%;
         overflow-x:hidden;
+        overflow-y:auto;  /* must be auto not hidden — hidden kills scroll on iOS */
         transition:background 0.4s ease, color 0.4s ease;
       }
 
@@ -111,7 +117,12 @@
       .logout-btn:hover { background:var(--danger);color:#fff;border-color:var(--danger);box-shadow:0 4px 16px rgba(232,54,93,0.25); }
 
       /* ── Main ── */
-      .container { position:relative;z-index:1;max-width:1280px;margin:auto;padding:calc(var(--header-height) + 40px) 24px 60px; }
+      .container {
+        position:relative;z-index:1;
+        max-width:1280px;margin:auto;
+        padding:calc(var(--header-height) + 40px) 24px 80px;
+        min-height:100vh; /* guarantees page body fills screen so scroll works */
+      }
 
       /* ── Welcome ── */
       .welcome-section { margin-bottom:36px;animation:fadeSlideUp 0.8s ease both; }
@@ -173,9 +184,25 @@
       .footer span { color:var(--accent);font-weight:500; }
 
       /* ── Modals ── */
-      .modal-overlay { position:fixed;inset:0;background:var(--modal-bg);backdrop-filter:blur(8px);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all 0.3s ease; }
+      .modal-overlay {
+        position:fixed;inset:0;background:var(--modal-bg);
+        backdrop-filter:blur(8px);z-index:2000;
+        display:flex;align-items:flex-start;justify-content:center;
+        opacity:0;visibility:hidden;transition:all 0.3s ease;
+        overflow-y:auto;          /* scroll when content is tall */
+        padding:24px 16px;        /* top+bottom padding so box never touches edges */
+        -webkit-overflow-scrolling:touch;
+      }
       .modal-overlay.active { opacity:1;visibility:visible; }
-      .modal-box { background:var(--modal-box-bg);border:1px solid var(--border);border-radius:var(--radius);padding:36px;max-width:420px;width:90%;text-align:center;transform:scale(0.9);transition:transform 0.3s ease;box-shadow:var(--shadow-lg); }
+      .modal-box {
+        background:var(--modal-box-bg);border:1px solid var(--border);
+        border-radius:var(--radius);padding:36px;
+        max-width:420px;width:100%;text-align:center;
+        transform:scale(0.9);transition:transform 0.3s ease;
+        box-shadow:var(--shadow-lg);
+        margin:auto;              /* centres vertically when content is short */
+        flex-shrink:0;
+      }
       .modal-overlay.active .modal-box { transform:scale(1); }
       .modal-box .modal-icon { width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px; }
       .modal-icon-danger { background:rgba(232,54,93,0.08);border:1px solid rgba(232,54,93,0.15);color:var(--danger); }
@@ -215,6 +242,8 @@
         .stats-bar{grid-template-columns:repeat(2,1fr);}
         .dashboard{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
         .card{padding:26px 18px 22px;}
+        .container{padding:calc(var(--header-height) + 24px) 16px 60px;}
+        .modal-box{padding:24px 20px;}
       }
       @media(max-width:480px){
         .stats-bar{grid-template-columns:1fr 1fr;}
@@ -222,6 +251,9 @@
         .welcome-section h1{font-size:1.5rem;}
         .brand-text{font-size:1rem;}
         .logout-btn span{display:none;}
+        .stat-chip{padding:14px 16px;}
+        .stat-chip-value{font-size:1.6rem;}
+        .modal-box{padding:20px 16px;}
       }
       @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important;}}
     </style>
