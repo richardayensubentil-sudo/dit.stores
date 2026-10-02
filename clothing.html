@@ -3237,18 +3237,15 @@
             <div class="nav-dropdown-menu no-print" id="navDropdownMenu">
               <div class="nav-dropdown-profile">
                 <div class="nav-dropdown-avatar" id="navDropdownAvatar">DIT</div>
-                <div>
-                  <div class="nav-dropdown-profile-name" id="navDropdownName">Stores System</div>
-                  <div class="nav-dropdown-profile-role">Admin</div>
-                </div>
-              </div>
-              <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
-              <a href="clothing.html" class="nav-dropdown-item active">Clothing</a>
-              <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
-              <a href="pay-stores.html" class="nav-dropdown-item">Pay Stores</a>
-              <a href="reports.html" class="nav-dropdown-item">Reports</a>
-              <a href="index.html" class="nav-dropdown-item" id="adminPanelNavItem" style="display: none">Admin Panel</a>
-              <div class="nav-dropdown-divider"></div>
+            <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
+            <a href="clothing.html" class="nav-dropdown-item active">Clothing</a>
+            <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
+            <a href="pay-stores.html" class="nav-dropdown-item">Pay Stores</a>
+            <a href="jobscard.html" class="nav-dropdown-item">Jobs Card</a>
+            <a href="personnel.html" class="nav-dropdown-item">Personnel</a>
+            <a href="reports.html" class="nav-dropdown-item">Reports</a>
+            <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display:none">Admin Panel</a>
+            <div class="nav-dropdown-divider"></div>
               <button type="button" class="nav-dropdown-item" id="navThemeToggleItem" onclick="toggleTheme()">
                 <span id="navThemeToggleLabel">Dark Mode</span>
                 <svg class="icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3727,7 +3724,7 @@
           </div>
           <div class="location-header-text">
             <span class="location-header-label">Viewing Location</span>
-            <span class="location-header-name" id="locationHeaderName">â€”</span>
+            <span class="location-header-name" id="locationHeaderName">””</span>
           </div>
         </div>
         <div class="location-header-stats" id="locationHeaderStats"></div>
@@ -3976,7 +3973,7 @@
             <label for="newItemSizes">
               Sizes
               <span style="font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-dim)">
-                (comma-separated â€” leave empty for issued/not-issued type)
+                (comma-separated ”” leave empty for issued/not-issued type)
               </span>
             </label>
             <input
@@ -4405,7 +4402,7 @@
 
       var cardSizeMode = {};
 
-      /* ===== RANK DEFINITIONS â€” Ghana Armed Forces ===== */
+      /* ===== RANK DEFINITIONS ”” Ghana Armed Forces ===== */
       var officerRanks = [
         "COL",
         "CMDR",
@@ -6356,7 +6353,7 @@
                     : "Size Roll";
         var html = '<div style="border:2px solid #1e3a5f;border-radius:10px;overflow:hidden;margin-top:16px">';
         html +=
-          '<div style="background:#1e3a5f;color:#fff;padding:10px 14px;font-weight:700;font-size:.8rem;display:flex;justify-content:space-between;align-items:center">Print Preview â€” ' +
+          '<div style="background:#1e3a5f;color:#fff;padding:10px 14px;font-weight:700;font-size:.8rem;display:flex;justify-content:space-between;align-items:center">Print Preview ”” ' +
           esc(modeLabel) +
           "</div>";
         html +=
@@ -6862,7 +6859,7 @@
             sHTML +=
               '<div style="border:1px solid #e2e8f0;padding:6px;border-radius:4px"><h4 style="font-size:8pt;margin:0 0 4px;color:#1e3a5f;border-bottom:1px solid #e2e8f0;padding-bottom:2px">' +
               esc(cfg2.name) +
-              " â€” Issued: " +
+              " ”” Issued: " +
               st._issued +
               " / Remaining: " +
               (personnelList.length - st._issued) +
@@ -6984,7 +6981,7 @@
         var headerHTML =
           "<h1>" +
           esc(titlePrefix) +
-          " â€” " +
+          " ”” " +
           esc(titleSuffix) +
           '</h1><div class="subtitle">' +
           dateStr +
@@ -7211,7 +7208,7 @@
           personnel: printPersonnel,
           configLookup: mergedConfig,
           mode: form.printMode || "nominal",
-          titlePrefix: "DIT CLOTHING MANAGEMENT â€” " + form.name,
+          titlePrefix: "DIT CLOTHING MANAGEMENT ”” " + form.name,
           dateStr: dateStr,
         });
       }
@@ -7406,7 +7403,7 @@
       }
       function renderClocCell(p) {
         if (p.cloc) return '<td class="cloc-col"><span class="cloc-badge">' + esc(p.cloc) + "</span></td>";
-        return '<td class="cloc-col"><span style="color:var(--text-dim);">â€”</span></td>';
+        return '<td class="cloc-col"><span style="color:var(--text-dim);">””</span></td>';
       }
       function updateSaveFormBtnVisibility() {
         var btn = document.getElementById("saveFormBtn");
@@ -7641,7 +7638,7 @@
               esc(id) +
               '"><h4>' +
               esc(cfg.name) +
-              ' â€” <span class="p-issued">Issued: ' +
+              ' ”” <span class="p-issued">Issued: ' +
               st._issued +
               '</span> / <span class="p-remain">Remaining: ' +
               st._remain +
@@ -8645,7 +8642,7 @@
               });
 
               if (nonEmptyCount > 0 && alphanumericCount / nonEmptyCount > 0.5) {
-                unmatchedHeaders.push(h + " (military ref â€” ignored)");
+                unmatchedHeaders.push(h + " (military ref ”” ignored)");
               } else if (nonEmptyCount > 0) {
                 var itemTitle = toAllCaps(h);
                 var baseKey = slugify(itemTitle);
@@ -9423,7 +9420,7 @@
           "th.alpha-hdr { background-color: #e5e7eb; font-size: 7pt; font-weight: 600; text-transform: none; letter-spacing: 0; color: #000; }";
         html += "td.name-col { text-align: left; }";
         html += "</style></head><body>";
-        html += "<h1>DIT CLOTHING MANAGEMENT â€” " + titleSuffix + "</h1>";
+        html += "<h1>DIT CLOTHING MANAGEMENT ”” " + titleSuffix + "</h1>";
         html +=
           '<div class="subtitle">' +
           dateStr +
@@ -9486,7 +9483,7 @@
           } else {
             itemKeys.forEach(function (k) {
               if (isToggleItem(k)) {
-                html += "<td>" + (isItemIssued(p, k) ? "Issued" : "â€”") + "</td>";
+                html += "<td>" + (isItemIssued(p, k) ? "Issued" : "””") + "</td>";
               } else {
                 var val = p[k] || "";
                 if (cardSizeMode[k] === "EU" && isConvertibleItem(k)) {
@@ -9494,7 +9491,7 @@
                   var eu = convertToEU(val, cat);
                   if (eu) val = val + " / " + eu;
                 }
-                html += "<td>" + (val ? esc(val) : "â€”") + (isItemIssued(p, k) ? " âœ“" : "") + "</td>";
+                html += "<td>" + (val ? esc(val) : "””") + (isItemIssued(p, k) ? " âœ“" : "") + "</td>";
               }
             });
           }

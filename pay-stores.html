@@ -833,7 +833,7 @@
         margin: 0;
       }
 
-      /* Balance input â€” text type, no spin buttons, clean display */
+      /* Balance input ”” text type, no spin buttons, clean display */
       .balance {
         border: none !important;
         background: transparent !important;
@@ -1209,7 +1209,7 @@
             </svg>
             <span id="modalTitleText">Receive Item</span>
           </h3>
-          <button class="close-btn" onclick="closeModal('transactionModal')">Ã—</button>
+          <button class="close-btn" onclick="closeModal('transactionModal')">×</button>
         </div>
         <div class="modal-body">
           <input type="hidden" id="modalTableId" />
@@ -1284,7 +1284,7 @@
             </svg>
             <span>Create Store</span>
           </h3>
-          <button class="close-btn" onclick="closeModal('registryModal')">Ã—</button>
+          <button class="close-btn" onclick="closeModal('registryModal')">×</button>
         </div>
         <div class="modal-body" style="grid-template-columns: 1fr">
           <input type="hidden" id="editRegistryId" value="" />
@@ -1350,7 +1350,7 @@
             </svg>
             Delete Store
           </h3>
-          <button class="close-btn" onclick="closeModal('deleteConfirmModal')">Ã—</button>
+          <button class="close-btn" onclick="closeModal('deleteConfirmModal')">×</button>
         </div>
         <div class="modal-body" style="grid-template-columns: 1fr; padding: 30px 20px">
           <div class="delete-confirm-icon">
@@ -1461,18 +1461,15 @@
             <div class="nav-dropdown-menu" id="navDropdownMenu">
               <div class="nav-dropdown-profile">
                 <div class="nav-dropdown-avatar">DIT</div>
-                <div>
-                  <div class="nav-dropdown-profile-name">Stores System</div>
-                  <div class="nav-dropdown-profile-role">Admin</div>
-                </div>
-              </div>
-              <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
-              <a href="clothing.html" class="nav-dropdown-item">Clothing</a>
-              <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
-              <a href="pay-stores.html" class="nav-dropdown-item active">Pay Stores</a>
-              <a href="reports.html" class="nav-dropdown-item">Reports</a>
-              <a href="index.html" class="nav-dropdown-item" id="adminPanelNavItem" style="display: none">Admin Panel</a>
-              <div class="nav-dropdown-divider"></div>
+            <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
+            <a href="clothing.html" class="nav-dropdown-item">Clothing</a>
+            <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
+            <a href="pay-stores.html" class="nav-dropdown-item active">Pay Stores</a>
+            <a href="jobscard.html" class="nav-dropdown-item">Jobs Card</a>
+            <a href="personnel.html" class="nav-dropdown-item">Personnel</a>
+            <a href="reports.html" class="nav-dropdown-item">Reports</a>
+            <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display:none">Admin Panel</a>
+            <div class="nav-dropdown-divider"></div>
               <a href="dashboard.html" class="nav-dropdown-item logout" onclick="return handleLogout(event);">Logout</a>
             </div>
           </div>
@@ -1706,7 +1703,7 @@
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
       }
 
-      /* Safe number parser â€” trims whitespace, returns 0 for NaN */
+      /* Safe number parser ”” trims whitespace, returns 0 for NaN */
       function safeNum(val) {
         var n = parseFloat(String(val || "0").trim());
         return isNaN(n) ? 0 : n;
@@ -1828,7 +1825,7 @@
       }
 
       /* ============================================================
-   SRL RENUMBERING â€” always 1, 2, 3â€¦ in visual order
+   SRL RENUMBERING ”” always 1, 2, 3”¦ in visual order
    ============================================================ */
       function renumberSrl(tableId) {
         var tbody = document.querySelector("#recordTable_" + tableId + " tbody");
@@ -2820,7 +2817,7 @@
         var qtyInHighlight = type === "receive" ? "qty-highlight" : "";
         var qtyOutHighlight = type === "issue" ? "qty-highlight" : "";
 
-        /* SRL cell â€” renumberSrl will fill it */
+        /* SRL cell ”” renumberSrl will fill it */
         row.innerHTML =
           '<td class="srl-cell" style="font-weight:600; color:var(--text-dim);"></td>' +
           '<td><input type="text" value="' +
@@ -2926,7 +2923,7 @@
       }
 
       /* ============================================================
-   BALANCE CALCULATION â€” two-pass: calculate then hide dupes
+   BALANCE CALCULATION ”” two-pass: calculate then hide dupes
    ============================================================ */
       function calculateRunningBalance(tableId) {
         var rows = Array.from(document.querySelectorAll("#recordTable_" + tableId + " tbody tr"));
@@ -3097,7 +3094,7 @@
       }
 
       /* ============================================================
-   DATA PERSISTENCE â€” loadTableData
+   DATA PERSISTENCE ”” loadTableData
    ============================================================ */
       function loadTableData(tableId) {
         var parsed = dbLoadTable(tableId);
@@ -3404,7 +3401,7 @@
       document.addEventListener("DOMContentLoaded", init);
 
       /* ============================================================
-         AUTOCOMPLETE â€” SVC NO. (military) & Name (civilian)
+         AUTOCOMPLETE ”” SVC NO. (military) & Name (civilian)
          Both auto-fill: SVC NO., Rank, Name, Dept
          ============================================================ */
 

@@ -6375,18 +6375,15 @@ body::after {
                     <div class="nav-dropdown-menu" id="navDropdownMenu">
                         <div class="nav-dropdown-profile">
                             <div class="nav-dropdown-avatar" id="navDropdownAvatar">DIT</div>
-                            <div>
-                                <div class="nav-dropdown-profile-name" id="navDropdownName">Stores System</div>
-                                <div class="nav-dropdown-profile-role">Admin</div>
-                            </div>
-                        </div>
-                        <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
-                        <a href="clothing.html" class="nav-dropdown-item">Clothing</a>
-                        <a href="inventories.html" class="nav-dropdown-item active">Inventories</a>
-                        <a href="pay-stores.html" class="nav-dropdown-item">Pay Stores</a>
-                        <a href="reports.html" class="nav-dropdown-item">Reports</a>
-                        <a href="index.html" class="nav-dropdown-item" id="adminPanelNavItem" style="display: none">Admin Panel</a>
-                        <div class="nav-dropdown-divider"></div>
+            <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
+            <a href="clothing.html" class="nav-dropdown-item">Clothing</a>
+            <a href="inventories.html" class="nav-dropdown-item active">Inventories</a>
+            <a href="pay-stores.html" class="nav-dropdown-item">Pay Stores</a>
+            <a href="jobscard.html" class="nav-dropdown-item">Jobs Card</a>
+            <a href="personnel.html" class="nav-dropdown-item">Personnel</a>
+            <a href="reports.html" class="nav-dropdown-item">Reports</a>
+            <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display:none">Admin Panel</a>
+            <div class="nav-dropdown-divider"></div>
                         <button type="button" class="nav-dropdown-item logout" id="navLogoutBtn">Logout</button>
                     </div>
                 </div>
@@ -6580,7 +6577,7 @@ body::after {
         </div>
         <div id="storesTableBanner" class="stores-table-banner">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            Default Stores â€” Items below include shelf/rack location
+            Default Stores ”” Items below include shelf/rack location
         </div>
         <div class="table-card" id="mainTableCard">
             <button type="button" class="col-toggle-btn" id="colToggleBtn" title="Toggle Columns"><svg
@@ -8813,7 +8810,7 @@ body::after {
         row.innerHTML =
           '<input type="text" value="' + skEscapeHtml(serial) + '" placeholder="' + skEscapeHtml(placeholder || "Serial #") + '" oninput="skCheckSerialDuplicates(); skUpdateSerialCountLabel();" />' +
           toggleHtml +
-          '<button type="button" class="remove-serial-btn" onclick="skRemoveSerialRow(this)" title="Remove">Ã—</button>';
+          '<button type="button" class="remove-serial-btn" onclick="skRemoveSerialRow(this)" title="Remove">×</button>';
         return row;
       }
 
@@ -8943,7 +8940,7 @@ body::after {
         if (existingBal > 0) {
           showToast("Item already exists. Use Edit instead.", "warning");
         } else {
-          showToast("Item is out of stock â€” saving will restock it and keep its history.", "default");
+          showToast("Item is out of stock ”” saving will restock it and keep its history.", "default");
         }
       }
 
@@ -8963,7 +8960,7 @@ body::after {
           if (dupIdx !== -1) {
             var dupBalance = (items[dupIdx].serials || []).length;
             if (dupBalance > 0) {
-              // Item still has stock â€” force user to use Edit so we don't
+              // Item still has stock ”” force user to use Edit so we don't
               // silently overwrite an in-stock row's serials/metadata.
               return showToast("Item already exists. Use Edit instead.", "error");
             }
@@ -9037,7 +9034,7 @@ body::after {
         if (broughtBy) skSavePersonnel({ name: broughtBy });
         closeModal("sk-itemModal");
         skRender();
-        showToast(isRestock ? "Item restocked â€” previous transaction history preserved" : "Item saved", "success");
+        showToast(isRestock ? "Item restocked ”” previous transaction history preserved" : "Item saved", "success");
       }
 
       function skDeleteItem(i) {
@@ -10088,7 +10085,7 @@ body::after {
               '</td><td class="mono">' +
               skEscapeHtml((i.serials || []).join(", ")) +
               "</td><td>" +
-              skEscapeHtml(i.location || "â€”") +
+              skEscapeHtml(i.location || "””") +
               "</td></tr>";
           });
           h +=
@@ -10121,13 +10118,13 @@ body::after {
               "</td><td><strong>" +
               skEscapeHtml(l.item) +
               '</strong></td><td class="mono">' +
-              skEscapeHtml(l.serial || "â€”") +
+              skEscapeHtml(l.serial || "””") +
               "</td><td>" +
-              skEscapeHtml(l.borrower || "â€”") +
+              skEscapeHtml(l.borrower || "””") +
               "</td><td>" +
-              skEscapeHtml(l.location || "â€”") +
+              skEscapeHtml(l.location || "””") +
               "</td><td>" +
-              skEscapeHtml(l.contact || "â€”") +
+              skEscapeHtml(l.contact || "””") +
               "</td><td>" +
               skFormatDate(l.date) +
               '</td><td><span class="badge-sm ' +
@@ -10166,13 +10163,13 @@ body::after {
               "</td><td><strong>" +
               skEscapeHtml(l.item) +
               '</strong></td><td class="mono">' +
-              skEscapeHtml(l.serial || "â€”") +
+              skEscapeHtml(l.serial || "””") +
               '</td><td class="num-right" style="text-align:center">' +
               (l.qty || 1) +
               "</td><td>" +
-              skEscapeHtml(r.name || "â€”") +
+              skEscapeHtml(r.name || "””") +
               "</td><td>" +
-              skEscapeHtml(r.issuedTo || "â€”") +
+              skEscapeHtml(r.issuedTo || "””") +
               "</td><td>" +
               skFormatDate(l.date) +
               "</td></tr>";
@@ -10208,11 +10205,11 @@ body::after {
               "</td><td><strong>" +
               skEscapeHtml(l.item) +
               '</strong></td><td class="mono">' +
-              skEscapeHtml(l.serial || "â€”") +
+              skEscapeHtml(l.serial || "””") +
               '</td><td class="num-right" style="text-align:center">' +
               (l.qty || 1) +
               "</td><td>" +
-              skEscapeHtml(l.borrower || "â€”") +
+              skEscapeHtml(l.borrower || "””") +
               "</td><td>" +
               skFormatDate(l.date) +
               '</td><td><span class="badge-sm ' +
@@ -10279,15 +10276,15 @@ body::after {
           ")</span></div>";
         html +=
           '<div class="info-row"><span class="info-label">Location</span><span class="info-value">' +
-          skEscapeHtml(item.location || "â€”") +
+          skEscapeHtml(item.location || "””") +
           "</span></div>";
         html +=
           '<div class="info-row"><span class="info-label">Date In</span><span class="info-value">' +
-          skFormatDate(item.dateReceived || "â€”") +
+          skFormatDate(item.dateReceived || "””") +
           "</span></div>";
         html +=
           '<div class="info-row"><span class="info-label">Brought By</span><span class="info-value">' +
-          skEscapeHtml(item.broughtBy || "â€”") +
+          skEscapeHtml(item.broughtBy || "””") +
           "</span></div>";
         html +=
           '<div class="info-row"><span class="info-label">Total Qty</span><span class="info-value">' +
@@ -10325,15 +10322,15 @@ body::after {
               "<tr><td>" +
               skLowerAlpha(i) +
               '</td><td class="mono" style="font-family:\'JetBrains Mono\',monospace;font-size:0.72rem;">' +
-              skEscapeHtml(l.serial || "â€”") +
+              skEscapeHtml(l.serial || "””") +
               "</td><td>" +
-              skEscapeHtml(l.borrower || "â€”") +
+              skEscapeHtml(l.borrower || "””") +
               "</td><td>" +
-              skEscapeHtml(l.location || "â€”") +
+              skEscapeHtml(l.location || "””") +
               "</td><td>" +
-              skFormatDate(l.date || "â€”") +
+              skFormatDate(l.date || "””") +
               "</td><td>" +
-              skFormatDate(l.returnDate || "â€”") +
+              skFormatDate(l.returnDate || "””") +
               '</td><td><span class="' +
               sc +
               '">' +
@@ -10360,17 +10357,17 @@ body::after {
               "<td>" +
               skLowerAlpha(i) +
               '</td><td class="mono" style="font-family:\'JetBrains Mono\',monospace;font-size:0.72rem;">' +
-              skEscapeHtml(l.serial || "â€”") +
+              skEscapeHtml(l.serial || "””") +
               "</td><td style=\"text-align:center;font-family:'JetBrains Mono',monospace;\">" +
               (l.qty || 1) +
               "</td><td>" +
-              skEscapeHtml(r.name || "â€”") +
+              skEscapeHtml(r.name || "””") +
               "</td><td>" +
-              skEscapeHtml(r.issuedTo || "â€”") +
+              skEscapeHtml(r.issuedTo || "””") +
               "</td><td>" +
-              skEscapeHtml(r.rank || "â€”") +
+              skEscapeHtml(r.rank || "””") +
               "</td><td>" +
-              skFormatDate(l.date || "â€”") +
+              skFormatDate(l.date || "””") +
               "</td></tr>";
           });
           html += "</tbody></table></div>";
@@ -10392,13 +10389,13 @@ body::after {
               "<tr><td>" +
               skLowerAlpha(i) +
               '</td><td class="mono" style="font-family:\'JetBrains Mono\',monospace;font-size:0.72rem;">' +
-              skEscapeHtml(l.serial || "â€”") +
+              skEscapeHtml(l.serial || "””") +
               "</td><td style=\"text-align:center;font-family:'JetBrains Mono',monospace;\">" +
               (l.qty || 1) +
               "</td><td>" +
-              skEscapeHtml(l.borrower || "â€”") +
+              skEscapeHtml(l.borrower || "””") +
               "</td><td>" +
-              skFormatDate(l.date || "â€”") +
+              skFormatDate(l.date || "””") +
               '</td><td><span class="' +
               sc +
               '">' +
@@ -10953,7 +10950,7 @@ body::after {
                         _loginName = String(_parsedLoginUser);
                     }
                 } catch (e) {
-                    // Not JSON â€” assume it's already a plain username string.
+                    // Not JSON ”” assume it's already a plain username string.
                     _loginName = _rawLoginUser;
                 }
             }
@@ -11601,7 +11598,7 @@ body::after {
                 const isSelected = _selectedItemIds.has(item.id);
 
                 let serialCellHtml = '';
-                if (isTransferredOut) { serialCellHtml = '<span class="transferred-masked">â€”</span>'; }
+                if (isTransferredOut) { serialCellHtml = '<span class="transferred-masked">””</span>'; }
                 else if (item.type === 'bulk') { serialCellHtml = '<span class="na-badge">N/A</span>'; }
                 else {
                     const allS = item.serials || [];
@@ -11692,7 +11689,7 @@ body::after {
                     const active = d === state.activeDept ? ' active' : '';
                     const isDefault = d === state.defaultDept;
                     const hasPw = !!getDeptAccessPassword(d);
-                    const lockBadge = (isDefault && !isAdminMode) ? '<span class="dept-default-badge" title="Default department â€” cannot be deleted"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>' : '';
+                    const lockBadge = (isDefault && !isAdminMode) ? '<span class="dept-default-badge" title="Default department ”” cannot be deleted"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>' : '';
                     const pwBadge = (hasPw && !isAdminMode) ? '<span class="dept-lock-badge" title="Password protected"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>' : '';
                     return '<div class="tab-btn' + active + '" data-dept="' + escAttr(d) + '"><span class="tab-btn-label">' + escHtml(d) + '</span>' + lockBadge + pwBadge + '<button type="button" class="dept-menu-btn" onclick="event.stopPropagation();showDeptMenu(event,\'' + escAttr(d) + '\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button></div>';
                 }).join('');
@@ -11761,7 +11758,7 @@ body::after {
                 openModal('categorySheetModal');
             }
 
-            window.showCategoryItemHistory = function (btn, categoryName, itemName) { const items = state.data.items.filter(i => i.category === categoryName && i.name === itemName); if (items.length === 0) { showToast('No items found.', 'error'); return; } const ct = document.getElementById('detailContent'); let allHistory = []; items.forEach(item => { const dept = item.department || 'Unknown'; (item.history || []).forEach(h => { allHistory.push({ date: h.date, type: h.type, rcvdFrom: h.rcvdFrom, rcvdBy: h.rcvdBy, qty: h.qty, note: h.note, department: h.department || dept, itemId: item.id, itemDept: dept, itemOffice: item.office || '' }); }); }); allHistory.sort((a, b) => (b.date || '').localeCompare(a.date || '')); const depts = [...new Set(items.map(i => i.department))]; const deptInfo = depts.length > 1 ? '<span style="margin-left:10px;font-size:.78rem;color:var(--warning);font-weight:600">Cross-department item (' + depts.join(', ') + ')</span>' : ''; let html = '<div style="margin-bottom:12px;font-size:.9rem;color:var(--text-muted)">Category: <strong style="color:var(--primary-dark)">' + escHtml(categoryName) + '</strong> â€” Item: <strong style="color:var(--text-main)">' + escHtml(itemName) + '</strong>' + deptInfo + '</div>'; if (allHistory.length === 0) { html += '<div style="text-align:center;padding:30px;color:var(--text-dim)">No history records found.</div>'; } else { html += '<div style="margin-bottom:8px;font-size:.78rem;color:var(--text-dim)">Showing <b>' + allHistory.length + '</b> history entries</div>'; html += '<table style="width:100%;border-collapse:collapse;font-size:.85rem"><thead><tr><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">#</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Date</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Dept</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Type</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">From</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">To</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Qty</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Note</th></tr></thead><tbody>'; allHistory.forEach((h, i) => { const typeLabel = h.type === 'transfer' ? '<span style="color:var(--warning);font-weight:700">Transfer</span>' : (h.type === 'received' ? '<span style="color:var(--success);font-weight:700">Received</span>' : '<span style="color:var(--text-muted)">' + escHtml(capitalizeWords(h.type)) + '</span>'); const deptBadge = '<span class="history-dept-badge">' + escHtml(h.department || '-') + '</span>'; html += '<tr><td style="padding:8px;border:1px solid var(--border-color);text-align:center;font-weight:600">' + (i + 1) + '</td><td style="padding:8px;border:1px solid var(--border-color);font-family:\'JetBrains Mono\',monospace;font-weight:600;color:var(--primary-dark)">' + formatDateDisplay(h.date) + '</td><td style="padding:8px;border:1px solid var(--border-color);text-align:center">' + deptBadge + '</td><td style="padding:8px;border:1px solid var(--border-color);text-align:center">' + typeLabel + '</td><td style="padding:8px;border:1px solid var(--border-color)">' + escHtml(h.rcvdFrom || '-') + '</td><td style="padding:8px;border:1px solid var(--border-color)">' + escHtml(h.rcvdBy || '-') + '</td><td style="padding:8px;border:1px solid var(--border-color);text-align:center;font-weight:700">' + (h.qty || '-') + '</td><td style="padding:8px;border:1px solid var(--border-color);font-size:.8rem;color:var(--text-dim)">' + escHtml(h.note || '-') + '</td></tr>'; }); html += '</tbody></table>'; } ct.innerHTML = html; document.getElementById('detailTitle').textContent = 'Item History: ' + itemName; openModal('detailModal'); };
+            window.showCategoryItemHistory = function (btn, categoryName, itemName) { const items = state.data.items.filter(i => i.category === categoryName && i.name === itemName); if (items.length === 0) { showToast('No items found.', 'error'); return; } const ct = document.getElementById('detailContent'); let allHistory = []; items.forEach(item => { const dept = item.department || 'Unknown'; (item.history || []).forEach(h => { allHistory.push({ date: h.date, type: h.type, rcvdFrom: h.rcvdFrom, rcvdBy: h.rcvdBy, qty: h.qty, note: h.note, department: h.department || dept, itemId: item.id, itemDept: dept, itemOffice: item.office || '' }); }); }); allHistory.sort((a, b) => (b.date || '').localeCompare(a.date || '')); const depts = [...new Set(items.map(i => i.department))]; const deptInfo = depts.length > 1 ? '<span style="margin-left:10px;font-size:.78rem;color:var(--warning);font-weight:600">Cross-department item (' + depts.join(', ') + ')</span>' : ''; let html = '<div style="margin-bottom:12px;font-size:.9rem;color:var(--text-muted)">Category: <strong style="color:var(--primary-dark)">' + escHtml(categoryName) + '</strong> ”” Item: <strong style="color:var(--text-main)">' + escHtml(itemName) + '</strong>' + deptInfo + '</div>'; if (allHistory.length === 0) { html += '<div style="text-align:center;padding:30px;color:var(--text-dim)">No history records found.</div>'; } else { html += '<div style="margin-bottom:8px;font-size:.78rem;color:var(--text-dim)">Showing <b>' + allHistory.length + '</b> history entries</div>'; html += '<table style="width:100%;border-collapse:collapse;font-size:.85rem"><thead><tr><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">#</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Date</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Dept</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Type</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">From</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">To</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Qty</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Note</th></tr></thead><tbody>'; allHistory.forEach((h, i) => { const typeLabel = h.type === 'transfer' ? '<span style="color:var(--warning);font-weight:700">Transfer</span>' : (h.type === 'received' ? '<span style="color:var(--success);font-weight:700">Received</span>' : '<span style="color:var(--text-muted)">' + escHtml(capitalizeWords(h.type)) + '</span>'); const deptBadge = '<span class="history-dept-badge">' + escHtml(h.department || '-') + '</span>'; html += '<tr><td style="padding:8px;border:1px solid var(--border-color);text-align:center;font-weight:600">' + (i + 1) + '</td><td style="padding:8px;border:1px solid var(--border-color);font-family:\'JetBrains Mono\',monospace;font-weight:600;color:var(--primary-dark)">' + formatDateDisplay(h.date) + '</td><td style="padding:8px;border:1px solid var(--border-color);text-align:center">' + deptBadge + '</td><td style="padding:8px;border:1px solid var(--border-color);text-align:center">' + typeLabel + '</td><td style="padding:8px;border:1px solid var(--border-color)">' + escHtml(h.rcvdFrom || '-') + '</td><td style="padding:8px;border:1px solid var(--border-color)">' + escHtml(h.rcvdBy || '-') + '</td><td style="padding:8px;border:1px solid var(--border-color);text-align:center;font-weight:700">' + (h.qty || '-') + '</td><td style="padding:8px;border:1px solid var(--border-color);font-size:.8rem;color:var(--text-dim)">' + escHtml(h.note || '-') + '</td></tr>'; }); html += '</tbody></table>'; } ct.innerHTML = html; document.getElementById('detailTitle').textContent = 'Item History: ' + itemName; openModal('detailModal'); };
 
             document.getElementById('newCatBtn').addEventListener('click', () => { _catModalMode = 'add'; _catModalEditTarget = null; document.getElementById('newCatModalTitleText').textContent = 'Add New Category'; document.getElementById('newCatNameInput').value = ''; openModal('newCatModal'); setTimeout(() => document.getElementById('newCatNameInput').focus(), 200); });
             document.getElementById('newCatSaveBtn').addEventListener('click', () => { let name = document.getElementById('newCatNameInput').value.trim(); if (!name) return showToast('Category name is required.', 'error'); name = capitalizeWords(name); if (_catModalMode === 'edit' && _catModalEditTarget) { const oldName = _catModalEditTarget; if (name.toLowerCase() === oldName.toLowerCase()) { closeModal('newCatModal'); return; } if (state.data.categories.find(c => c.name.toLowerCase() === name.toLowerCase() && c.dept === state.activeDept)) return showToast('Category "' + name + '" already exists.', 'error'); const cat = state.data.categories.find(c => c.name === oldName); if (cat) { cat.name = name; state.data.items.forEach(i => { if (i.category === oldName) i.category = name; }); saveState(); refreshAll(); closeModal('newCatModal'); showToast('Category renamed to "' + name + '".'); } } else { if (state.data.categories.find(c => c.name.toLowerCase() === name.toLowerCase() && c.dept === state.activeDept)) return showToast('Category "' + name + '" already exists.', 'error'); state.data.categories.push({ name, id: 'cat_' + Date.now(), dept: state.activeDept }); saveState(); refreshAll(); closeModal('newCatModal'); showToast('Category "' + name + '" added.'); } });
@@ -12325,15 +12322,15 @@ body::after {
                 }
             }
 
-            document.getElementById('catDeleteBtn').addEventListener('click', () => { const ci = state.data.items.filter(i => i.category === activeCatTarget); if (ci.length > 0) { showToast('Cannot delete "' + activeCatTarget + '" â€” has ' + ci.length + ' item(s).', 'error'); return; } confirmUser('Delete category "' + activeCatTarget + '"?', () => { state.data.categories = state.data.categories.filter(c => c.name !== activeCatTarget); if (state.activeCategory === activeCatTarget) state.activeCategory = null; saveState(); refreshAll(); }); });
+            document.getElementById('catDeleteBtn').addEventListener('click', () => { const ci = state.data.items.filter(i => i.category === activeCatTarget); if (ci.length > 0) { showToast('Cannot delete "' + activeCatTarget + '" ”” has ' + ci.length + ' item(s).', 'error'); return; } confirmUser('Delete category "' + activeCatTarget + '"?', () => { state.data.categories = state.data.categories.filter(c => c.name !== activeCatTarget); if (state.activeCategory === activeCatTarget) state.activeCategory = null; saveState(); refreshAll(); }); });
             document.getElementById('officeEditBtn').addEventListener('click', () => { _officeModalMode = 'edit'; _officeModalEditTarget = activeOfficeTarget; document.getElementById('newOfficeModalTitleText').textContent = 'Rename Office'; document.getElementById('newOfficeNameInput').value = activeOfficeTarget; openModal('newOfficeModal'); setTimeout(() => { const inp = document.getElementById('newOfficeNameInput'); inp.focus(); inp.select(); }, 200); });
             document.getElementById('officeDeleteBtn').addEventListener('click', () => { const office = state.data.offices.find(o => o.name === activeOfficeTarget); if (office && office.isDefault) return showToast("Cannot delete default Stores.", "error"); confirmUser('Delete office "' + activeOfficeTarget + '"?', () => { const deletedOfficeDept = (state.data.offices.find(o => o.name === activeOfficeTarget) || {}).dept || state.activeDept; state.data.offices = state.data.offices.filter(o => o.name !== activeOfficeTarget); state.data.items = state.data.items.filter(i => i.office !== activeOfficeTarget || i.department !== deletedOfficeDept); pruneEmptyCategories(deletedOfficeDept); clearColScopeForOffice(deletedOfficeDept, activeOfficeTarget); if (state.activeOffice === activeOfficeTarget) state.activeOffice = null; saveState(); refreshAll(); }); });
             document.getElementById('deptEditBtn').addEventListener('click', () => { _deptModalMode = 'edit'; _deptModalEditTarget = activeDeptTarget; document.getElementById('newDeptModalTitleText').textContent = 'Rename Department'; document.getElementById('newDeptNameInput').value = activeDeptTarget; document.getElementById('newDeptPasswordGroup').style.display = 'none'; openModal('newDeptModal'); setTimeout(() => { const inp = document.getElementById('newDeptNameInput'); inp.focus(); inp.select(); }, 200); });
             document.getElementById('deptPasswordBtn').addEventListener('click', () => { document.getElementById('deptActionMenu').classList.remove('show'); openDeptPasswordManage(activeDeptTarget); });
-            function openDeptPasswordManage(deptName) { if (deptName === state.defaultDept) { showToast('"' + deptName + '" uses the admin login password and cannot have a separate department password.', 'error'); return; } window._pwManageDeptTarget = deptName; document.getElementById('deptPasswordModalDeptName').textContent = deptName; document.getElementById('deptPasswordCurrentDisplay').value = (state.deptPasswords && state.deptPasswords[deptName]) ? state.deptPasswords[deptName] : '(none set â€” department is open to all)'; document.getElementById('deptPasswordNewInput').value = ''; openModal('deptPasswordModal'); }
-            document.getElementById('deptPasswordSaveBtn').addEventListener('click', () => { const dept = window._pwManageDeptTarget; if (!dept) return; if (!state.deptPasswords) state.deptPasswords = {}; const val = document.getElementById('deptPasswordNewInput').value.trim(); if (!val) return showToast('A password is required â€” departments cannot be left unprotected.', 'error'); state.deptPasswords[dept] = val; saveState(); renderDeptTabs(); renderSidebarOffices(); showToast('Password set for "' + dept + '".'); closeModal('deptPasswordModal'); });
+            function openDeptPasswordManage(deptName) { if (deptName === state.defaultDept) { showToast('"' + deptName + '" uses the admin login password and cannot have a separate department password.', 'error'); return; } window._pwManageDeptTarget = deptName; document.getElementById('deptPasswordModalDeptName').textContent = deptName; document.getElementById('deptPasswordCurrentDisplay').value = (state.deptPasswords && state.deptPasswords[deptName]) ? state.deptPasswords[deptName] : '(none set ”” department is open to all)'; document.getElementById('deptPasswordNewInput').value = ''; openModal('deptPasswordModal'); }
+            document.getElementById('deptPasswordSaveBtn').addEventListener('click', () => { const dept = window._pwManageDeptTarget; if (!dept) return; if (!state.deptPasswords) state.deptPasswords = {}; const val = document.getElementById('deptPasswordNewInput').value.trim(); if (!val) return showToast('A password is required ”” departments cannot be left unprotected.', 'error'); state.deptPasswords[dept] = val; saveState(); renderDeptTabs(); renderSidebarOffices(); showToast('Password set for "' + dept + '".'); closeModal('deptPasswordModal'); });
 
-            document.getElementById('deptDeleteBtn').addEventListener('click', () => { if (activeDeptTarget === state.defaultDept) { showToast('"' + activeDeptTarget + '" is the default department and cannot be deleted.', 'error'); return; } if (state.departments.length <= 1) return showToast('At least one department is required.', 'error'); const di = state.data.items.filter(i => i.department === activeDeptTarget); if (di.length > 0) { showToast('Cannot delete "' + activeDeptTarget + '" â€” has ' + di.length + ' item(s).', 'error'); return; } confirmUser('Delete department "' + activeDeptTarget + '"?', () => { state.departments = state.departments.filter(d => d !== activeDeptTarget); state.data.categories = state.data.categories.filter(c => c.dept !== activeDeptTarget); state.data.offices = state.data.offices.filter(o => o.dept !== activeDeptTarget); if (state.activeDept === activeDeptTarget) state.activeDept = state.departments[0]; saveState(); renderDeptTabs(); ensureDefaultStores(); refreshAll(); showToast('Department deleted.'); }); });
+            document.getElementById('deptDeleteBtn').addEventListener('click', () => { if (activeDeptTarget === state.defaultDept) { showToast('"' + activeDeptTarget + '" is the default department and cannot be deleted.', 'error'); return; } if (state.departments.length <= 1) return showToast('At least one department is required.', 'error'); const di = state.data.items.filter(i => i.department === activeDeptTarget); if (di.length > 0) { showToast('Cannot delete "' + activeDeptTarget + '" ”” has ' + di.length + ' item(s).', 'error'); return; } confirmUser('Delete department "' + activeDeptTarget + '"?', () => { state.departments = state.departments.filter(d => d !== activeDeptTarget); state.data.categories = state.data.categories.filter(c => c.dept !== activeDeptTarget); state.data.offices = state.data.offices.filter(o => o.dept !== activeDeptTarget); if (state.activeDept === activeDeptTarget) state.activeDept = state.departments[0]; saveState(); renderDeptTabs(); ensureDefaultStores(); refreshAll(); showToast('Department deleted.'); }); });
             document.getElementById('officeDeleteItemsBtn').addEventListener('click', () => { const officeName = activeOfficeTarget; const selectedInOffice = state.data.items.filter(i => _selectedItemIds.has(i.id) && i.department === state.activeDept && i.office === officeName); const allInOffice = state.data.items.filter(i => i.department === state.activeDept && i.office === officeName); const itemsToDelete = selectedInOffice.length > 0 ? selectedInOffice : allInOffice; document.getElementById('officeActionMenu').classList.remove('show'); if (itemsToDelete.length === 0) return showToast('No items in this office to delete.', 'error'); const scopeLabel = selectedInOffice.length > 0 ? selectedInOffice.length + ' selected item(s)' : 'all ' + allInOffice.length + ' item(s)'; confirmUser('Delete ' + scopeLabel + ' in "' + officeName + '"?', () => { const idsToRemove = new Set(itemsToDelete.map(i => i.id)); state.data.items = state.data.items.filter(i => !idsToRemove.has(i.id)); idsToRemove.forEach(id => _selectedItemIds.delete(id)); updateSelectAllCheckbox(); pruneEmptyCategories(state.activeDept); saveState(); refreshAll(); showToast(itemsToDelete.length + ' item(s) deleted from ' + officeName + '.'); }); });
 
             window.currentReturnItemId = null; window.currentTransferItemId = null; window.currentDeleteItemId = null;
@@ -12454,7 +12451,7 @@ body::after {
                     document.getElementById('returnItemName').innerText = targets.length + ' selected item(s)';
                     const items = state.data.items.filter(i => targets.includes(i.id));
                     let any = false;
-                    items.forEach(item => { (item.serials || []).filter(s => s.status === 'loaned').forEach(s => { any = true; const d = document.createElement('label'); d.className = 'checkbox-item'; const key = serialKey(s); const disp = isNaSerial(s) ? 'N/A' : s.no; const rPic = s.image || item.image; const rThumb = rPic ? '<img src="' + escAttr(rPic) + '" class="serial-tag-thumb" alt="" onclick="event.preventDefault(); event.stopPropagation(); openLightbox(\'' + escJsAttr(rPic) + '\', \'' + escJsAttr(item.name) + '\')">' : ''; d.innerHTML = rThumb + '<input type="checkbox" value="' + escAttr(key) + '" data-item-id="' + escAttr(item.id) + '" class="return-checkbox"> <span>' + escHtml(item.name) + ' â€” ' + escHtml(disp) + '</span> <span style="font-size:.75rem;color:var(--text-dim);margin-left:8px">(To: ' + (s.loanRank ? s.loanRank + ' ' : '') + escHtml(s.loanTo) + ')</span>'; list.appendChild(d); }); });
+                    items.forEach(item => { (item.serials || []).filter(s => s.status === 'loaned').forEach(s => { any = true; const d = document.createElement('label'); d.className = 'checkbox-item'; const key = serialKey(s); const disp = isNaSerial(s) ? 'N/A' : s.no; const rPic = s.image || item.image; const rThumb = rPic ? '<img src="' + escAttr(rPic) + '" class="serial-tag-thumb" alt="" onclick="event.preventDefault(); event.stopPropagation(); openLightbox(\'' + escJsAttr(rPic) + '\', \'' + escJsAttr(item.name) + '\')">' : ''; d.innerHTML = rThumb + '<input type="checkbox" value="' + escAttr(key) + '" data-item-id="' + escAttr(item.id) + '" class="return-checkbox"> <span>' + escHtml(item.name) + ' ”” ' + escHtml(disp) + '</span> <span style="font-size:.75rem;color:var(--text-dim);margin-left:8px">(To: ' + (s.loanRank ? s.loanRank + ' ' : '') + escHtml(s.loanTo) + ')</span>'; list.appendChild(d); }); });
                     if (!any) list.innerHTML = '<div style="padding:10px;color:var(--text-dim)">No loaned items.</div>';
                     openModal('returnModal');
                     return;

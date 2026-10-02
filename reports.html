@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reports â€” DIT Inventory System</title>
+    <title>Reports ”” DIT Inventory System</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=DM+Sans:wght@300;400;500;600&amp;display=swap"
       rel="stylesheet"
@@ -370,7 +370,33 @@
           <i class="fa-solid fa-moon" id="themeIcon"></i>
         </button>
         <div class="live-clock" id="liveClock" aria-live="polite"></div>
-        <button class="logout-btn" onclick="showLogoutModal()" aria-label="Logout">
+        
+      <div class="nav-dropdown-wrap" id="navDropdownWrap" style="position:relative">
+        <button type="button" class="nav-toggle-btn" id="navToggleBtn" onclick="toggleNavDropdown(event)"
+          style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--glass-bg,rgba(0,0,0,.04));border:1px solid var(--border,rgba(0,0,0,.07));border-radius:10px;font-size:.88rem;font-weight:500;cursor:pointer;color:var(--fg);font-family:inherit;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+          Navigate
+        </button>
+        <div class="nav-dropdown-menu" id="navDropdownMenu"
+          style="display:none;position:absolute;top:calc(100% + 8px);right:0;min-width:200px;background:var(--card,#fff);border:1px solid var(--border,rgba(0,0,0,.07));border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.12);z-index:2000;overflow:hidden;">
+          <div style="padding:8px;">
+            <a href="dashboard.html" class="nav-dropdown-item">Dashboard</a>
+            <a href="clothing.html" class="nav-dropdown-item">Clothing</a>
+            <a href="inventories.html" class="nav-dropdown-item">Inventories</a>
+            <a href="pay-stores.html" class="nav-dropdown-item">Pay Stores</a>
+            <a href="jobscard.html" class="nav-dropdown-item">Jobs Card</a>
+            <a href="personnel.html" class="nav-dropdown-item">Personnel</a>
+            <a href="reports.html" class="nav-dropdown-item active">Reports</a>
+            <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display:none">Admin Panel</a>
+            <div class="nav-dropdown-divider" style="height:1px;background:var(--border,rgba(0,0,0,.07));margin:4px 0;"></div>
+            <button type="button" class="nav-dropdown-item logout" onclick="showLogoutModal()"
+              style="width:100%;text-align:left;padding:8px 12px;background:none;border:none;cursor:pointer;font-size:.88rem;font-family:inherit;color:#e8365d;display:block;">Logout</button>
+          </div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="showLogoutModal()" aria-label="Logout">
           <i class="fa-solid fa-arrow-right-from-bracket"></i>
           <span>Logout</span>
         </button>
@@ -460,7 +486,7 @@
 
       <!-- FOOTER -->
       <footer class="footer">
-        Â© <span id="footerYear"></span> Richard Ayensu Bentil â€” <span>v2.5</span>. All rights reserved.
+        © <span id="footerYear"></span> Richard Ayensu Bentil ”” <span>v2.5</span>. All rights reserved.
       </footer>
     </main>
 
