@@ -1,3 +1,6 @@
+/* Prevent iOS WebKit scroll lock when overflow-x:hidden is set on body */
+html { overflow-y: scroll; }
+
 /* ═══════════════════════════════════════════════════════════════
    DIT Integrated System — Shared Responsive Stylesheet
    Applied to all pages. Page-specific overrides live inline.
