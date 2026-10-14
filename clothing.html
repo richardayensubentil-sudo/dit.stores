@@ -4,15 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Clothing Inventory System</title>
+    <script src="neon-storage.js"></script>
     <script>
-      const memoryStore=window.neonStorage;
+      /* memoryStore = neonStorage — loaded above, always available */
+      const memoryStore = window.neonStorage;
 
-      /* Apply the shared saved theme before first paint; light is the default. */
+      /* Apply the user's saved theme before first paint — read from Neon cache */
       (function () {
         try {
-          document.documentElement.removeAttribute("data-theme");
-          memoryStore.setItem("dit_theme", "light");
-        } catch (e) {}
+          var saved = memoryStore ? memoryStore.getItem('dit_theme') : null;
+          if (saved) {
+            document.documentElement.setAttribute('data-theme', saved);
+          } else {
+            /* fallback: check localStorage theme set by other pages */
+            var ls = localStorage.getItem('dit_theme');
+            document.documentElement.setAttribute('data-theme', ls || 'light');
+          }
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
       })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -3258,8 +3268,7 @@
       }
     </style>
     <link rel="stylesheet" href="responsive.css" />
-    <script src="neon-storage.js"></script>
-</head>
+    </head>
   <body>
     <script>try { if (!JSON.parse(sessionStorage.getItem('loggedInUser') || 'null')) window.location.replace('index.html'); } catch (e) { sessionStorage.clear(); window.location.replace('index.html'); }</script>
     <div class="module-background" aria-hidden="true"><canvas id="moduleBgCanvas"></canvas></div>
@@ -6457,7 +6466,7 @@
           memoryStore.setItem(DB_KEY, payload);
           auditClothingChanges();
         } catch (e) {
-          showToast("Storage full — data NOT saved!", "error", 10000);
+          showToast("Save failed — could not write to Neon. Check your connection.", "error", 10000);
         }
       }
       function recalculateCounters() {

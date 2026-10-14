@@ -136,7 +136,7 @@
         read: false
       });
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+        saveMessages(messages);
         modal.close();
       } catch (error) {
         window.alert("The message could not be saved. Please try again.");
@@ -207,7 +207,7 @@
           markRead.textContent = "Mark as read";
           markRead.addEventListener("click", () => {
             const updated = getMessages().map((entry) => entry.id === message.id ? { ...entry, read: true } : entry);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            saveMessages(updated);
             renderMessages();
           });
           item.appendChild(markRead);
