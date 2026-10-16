@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pay Printing Stores</title>
     <script>
-      document.documentElement.removeAttribute('data-theme'); window.neonStorage&&window.neonStorage.setItem('dit_theme', 'light');
+      (function(){try{var t=window.neonStorage?window.neonStorage.getItem('dit_theme'):localStorage.getItem('dit_theme');document.documentElement.setAttribute('data-theme',t||'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />

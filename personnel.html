@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Personel Management</title>
-  <script>document.documentElement.removeAttribute('data-theme'); localStorage.setItem('dit_theme', 'light');</script>
+  <script>(function(){try{var t=window.neonStorage?window.neonStorage.getItem('dit_theme'):localStorage.getItem('dit_theme');document.documentElement.setAttribute('data-theme',t||'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
+</script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts -->
@@ -349,6 +350,7 @@
     [data-theme="light"] .module-background { background: radial-gradient(circle at 0% 0%, #e0e7ff 0%, #f8fafc 50%); }
   </style>
   <link rel="stylesheet" href="responsive.css" />
+  <script src="neon-storage.js"></script>
 </head>
 <body>
   <script>try { if (!JSON.parse(sessionStorage.getItem('loggedInUser') || 'null')) window.location.replace('index.html'); } catch (e) { sessionStorage.clear(); window.location.replace('index.html'); }</script>
@@ -640,7 +642,7 @@
   <script>
     function toggleTheme() {
       document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('dit_theme', 'light');
+      /* theme: set via neonStorage */
     }
 
     function updateLoggedInUserDisplay() {
@@ -748,7 +750,7 @@
     });
 
     function loadData() {
-      const storedP = (window.neonStorage?window.neonStorage.getItem('dit_personnel_data'):null);
+      const storedP = (function(){try{return window.neonStorage?window.neonStorage.getItem('dit_personnel_data'):null;}catch(e){return null;}}());
       if (storedP) {
         const storedPersonnel = JSON.parse(storedP);
         personnel = storedPersonnel.map(function (p) {
@@ -762,7 +764,7 @@
     }
 
     function saveData() {
-      window.neonStorage&&window.neonStorage.setItem('dit_personnel_data', JSON.stringify(personnel));
+      (function(v){if(!window.neonStorage){console.error('neonStorage not loaded');return;}try{window.neonStorage.setItem('dit_personnel_data', JSON.stringify(personnel));
     }
 
     function comparePersonnelTableOrder(a, b) {

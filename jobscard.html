@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jobs Records</title>
-    <script>document.documentElement.removeAttribute('data-theme'); localStorage.setItem('dit_theme', 'light');</script>
+  <script>(function(){try{var t=window.neonStorage?window.neonStorage.getItem('dit_theme'):localStorage.getItem('dit_theme');document.documentElement.setAttribute('data-theme',t||'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
+</script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts -->
@@ -357,6 +358,7 @@
     [data-theme="light"] .module-background { background: radial-gradient(circle at 0% 0%, #e0e7ff 0%, #f8fafc 50%); }
   </style>
   <link rel="stylesheet" href="responsive.css" />
+  <script src="neon-storage.js"></script>
 </head>
 <body>
     <script>try { if (!JSON.parse(sessionStorage.getItem('loggedInUser') || 'null')) window.location.replace('index.html'); } catch (e) { sessionStorage.clear(); window.location.replace('index.html'); }</script>
@@ -764,11 +766,11 @@
   <script>
         function toggleTheme() {
             document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('dit_theme', 'light');
+            /* theme: set via neonStorage */
         }
     /* --- STATE MANAGEMENT --- */
     let jobs = [];
-    let jobCounter = parseInt((window.neonStorage?window.neonStorage.getItem('ditJobCounter'):null)) || 1;
+    let jobCounter = parseInt((function(){try{return window.neonStorage?window.neonStorage.getItem('ditJobCounter'):null;}catch(e){return null;}}())) || 1;
     let canImportJobBackup = false;
 
     /* --- INITIALIZATION --- */
@@ -795,7 +797,7 @@
     });
 
     function initSystem() {
-        const storedJobs = (window.neonStorage?window.neonStorage.getItem('dit_jobs_data'):null);
+        const storedJobs = (function(){try{return window.neonStorage?window.neonStorage.getItem('dit_jobs_data'):null;}catch(e){return null;}}());
         if (storedJobs) {
             jobs = JSON.parse(storedJobs).map(function (job) {
                 return { ...job, userId: job.userId || getCurrentUserId() };
@@ -879,8 +881,8 @@
         }
 
     function saveToStorage() {
-      window.neonStorage&&window.neonStorage.setItem('dit_jobs_data', JSON.stringify(jobs));
-      window.neonStorage&&window.neonStorage.setItem('ditJobCounter', jobCounter);
+      try{window.neonStorage.setItem('dit_jobs_data', JSON.stringify(jobs));}catch(e){console.error('jobs save failed:',e);}
+      try{window.neonStorage.setItem('ditJobCounter', String(jobCounter));}catch(e){}
     }
 
         function downloadJobBackup() {
