@@ -1612,7 +1612,7 @@
    API (e.g. GET/POST /api/registries, GET/POST /api/tables/:id) --
    nothing else in the file needs to change.
    ============================================================ */
-      var memoryStore=Object.assign(Object.create(window.neonStorage),{currentUser:null,registries:[],tables:{}});
+      var memoryStore=Object.assign(Object.create(window.neonStorage),{currentUser:null,registries:null,nextRegistryNum:1,tables:{}});
 
       var PAY_STORE_ACTIVITY_KEY = "dit_pay_stores_activity_v1";
       var ACTIVITY_LOG_KEY = "dit_activity_log_v1";
