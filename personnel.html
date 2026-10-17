@@ -735,7 +735,7 @@
       if (!_isAdmin && !_persPriv.view) { window.location.href = 'dashboard.html'; return; }
       // Disable write actions based on permissions
       if (!_isAdmin && !_persPriv.add) {
-        document.querySelectorAll('[onclick*="openAddModal"], [onclick*="addPersonnel"], .add-btn').forEach(function(el){ el.style.display = 'none'; });
+        document.querySelectorAll('[onclick*="openAddModal"], [onclick*="addPersonnel"], [onclick*="openModal"], .add-btn').forEach(function(el){ el.style.display = 'none'; });
       }
       if (!_isAdmin && !_persPriv.edit) {
         document.querySelectorAll('[onclick*="openEditModal"], [onclick*="editPersonnel"]').forEach(function(el){ el.style.display = 'none'; });

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory &amp; Loan System</title>
     <script>
-      document.documentElement.removeAttribute('data-theme'); window.neonStorage&&window.neonStorage.setItem('dit_theme', 'light');
+      document.documentElement.removeAttribute('data-theme'); /* theme read-only init */
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14111,9 +14111,19 @@ body::after {
         </script>
         <script>
           function toggleTheme() {
-            document.documentElement.removeAttribute('data-theme');
-            window.neonStorage&&window.neonStorage.setItem('dit_theme', 'light');
-          }
+      var html = document.documentElement;
+      var current = html.getAttribute('data-theme') || 'light';
+      var next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      try { if (window.neonStorage) window.neonStorage.setItem('dit_theme', next); } catch(e) {}
+      // Update icons
+      var themeIcon = document.getElementById('themeIcon');
+      if (themeIcon) themeIcon.className = next === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      var moon = document.querySelector('.moon-icon');
+      var sun  = document.querySelector('.sun-icon');
+      if (moon) moon.style.display = next === 'dark' ? 'none' : 'block';
+      if (sun)  sun.style.display  = next === 'dark' ? 'block' : 'none';
+    }
         </script>
     <script src="message-admin.js"></script>
     <script src="module-background.js"></script>

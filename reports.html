@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reports — DIT Inventory System</title>
-    <script>document.documentElement.removeAttribute('data-theme'); window.neonStorage&&window.neonStorage.setItem('dit_theme', 'light');</script>
+    <script>document.documentElement.removeAttribute('data-theme'); /* theme read-only init */</script>
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=DM+Sans:wght@300;400;500;600&amp;display=swap"
       rel="stylesheet"
@@ -505,12 +505,14 @@
 
       /* ================= THEME TOGGLE ================= */
       function toggleTheme() {
-        document.documentElement.removeAttribute('data-theme');
-        window.neonStorage&&window.neonStorage.setItem('dit_theme', 'light');
+        const html = document.documentElement;
+        const current = html.getAttribute('data-theme') || 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        try { if (window.neonStorage) window.neonStorage.setItem('dit_theme', next); } catch(e) {}
         const icon = document.getElementById('themeIcon');
         if (icon) {
-          icon.classList.remove('fa-sun');
-          icon.classList.add('fa-moon');
+          icon.className = next === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
         }
       }
 
@@ -657,6 +659,26 @@
             activities.push({ module: 'printing', icon: 'fa-print', action: entry.action || 'Pay-store activity', detail: entry.detail || 'Pay-store record', user: entry.user || 'Unknown user', date: entry.date || entry.createdAt || '', quantity: entry.quantity, order: order++ });
           });
         }
+
+        // Jobs card direct data
+        try {
+          var jobs = readJson('dit_jobs_data', []) || [];
+          // Only include if not already covered by audit log
+          var hasJobsInLog = activities.some(function(a){ return a.module === 'jobscard'; });
+          if (!hasJobsInLog) {
+            jobs.forEach(function(job) {
+              activities.push({
+                module: 'jobscard',
+                icon: 'fa-screwdriver-wrench',
+                action: job.status === 'Completed' ? 'Job completed' : job.status === 'Collected' ? 'Job collected' : 'Job card created',
+                detail: (job.equipmentName || job.description || 'Job #' + (job.jobNumber || job.id || '')),
+                user: job.requestedBy || job.user || 'Unknown user',
+                date: job.dateCompleted || job.dateCreated || job.createdAt || '',
+                order: order++
+              });
+            });
+          }
+        } catch(e) {}
 
         return activities.sort(function (a, b) {
           var diff = new Date(b.date || 0) - new Date(a.date || 0);

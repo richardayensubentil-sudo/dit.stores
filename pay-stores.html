@@ -1546,9 +1546,19 @@
 
     <script>
       function toggleTheme() {
-        document.documentElement.removeAttribute('data-theme');
-        window.neonStorage&&window.neonStorage.setItem('dit_theme', 'light');
-      }
+      var html = document.documentElement;
+      var current = html.getAttribute('data-theme') || 'light';
+      var next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      try { if (window.neonStorage) window.neonStorage.setItem('dit_theme', next); } catch(e) {}
+      // Update icons
+      var themeIcon = document.getElementById('themeIcon');
+      if (themeIcon) themeIcon.className = next === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      var moon = document.querySelector('.moon-icon');
+      var sun  = document.querySelector('.sun-icon');
+      if (moon) moon.style.display = next === 'dark' ? 'none' : 'block';
+      if (sun)  sun.style.display  = next === 'dark' ? 'block' : 'none';
+    }
       /* ============================================================
    STATE & CONSTANTS
    ============================================================ */
@@ -3563,7 +3573,10 @@
         showTable(activeTableId);
       }
 
-      document.addEventListener("DOMContentLoaded", init);
+      document.addEventListener("DOMContentLoaded", function() {
+        // Defer init so browser can paint UI first — prevents "unresponsive" perception
+        setTimeout(init, 0);
+      });
 
       /* ============================================================
          AUTOCOMPLETE — SVC NO. (military) & Name (civilian)
