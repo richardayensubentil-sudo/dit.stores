@@ -3182,7 +3182,10 @@
         .main-container {
           padding: 16px;
         }
-        .header-right {
+        /* header-right non-nav elements hidden on mobile */
+        .header-right .user-info,
+        .header-right .date-badge-row,
+        .header-right .theme-toggle-btn {
           display: none;
         }
         .header-left h1 {
@@ -3246,6 +3249,16 @@
           font-size: 0.75rem;
         }
       }
+            /* Nav always visible on all screen sizes */
+      @media (max-width: 768px) {
+        .nav-dropdown-wrap { display: inline-block !important; }
+      }
+
+            /* Nav always visible on all screen sizes */
+      @media (max-width: 768px) {
+        .nav-dropdown-wrap { display: inline-block !important; }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         *,
         *::before,

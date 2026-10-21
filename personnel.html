@@ -764,7 +764,17 @@
     }
 
     function saveData() {
-      (function(v){if(!window.neonStorage){console.error('neonStorage not loaded');return;}try{window.neonStorage.setItem('dit_personnel_data', JSON.stringify(personnel));
+      try {
+        if (!window.neonStorage) { console.error('neonStorage not loaded'); return; }
+        window.neonStorage.setItem('dit_personnel_data', JSON.stringify(personnel));
+      } catch (e) {
+        console.error('saveData failed:', e);
+        showToast('error', 'Save failed: ' + (e.message || 'storage error'));
+      }
+    } catch (e) {
+        console.error('saveData failed:', e);
+        showToast('error', 'Save failed: ' + (e.message || 'storage error'));
+      }
     }
 
     function comparePersonnelTableOrder(a, b) {
