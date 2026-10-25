@@ -5,25 +5,25 @@
   const values = Object.create(null);
   let loadError = null;
 
-  // ── Initial bulk load (synchronous so page scripts can read immediately) ──
+  // ── Initial bulk load — async-first, sync fallback with short timeout ──
   try {
     const request = new XMLHttpRequest();
     request.open('GET', API_ROOT, false); // synchronous
+    request.timeout = 4000; // 4s max — fail fast, don't hang the page
     request.send();
     if (request.status >= 200 && request.status < 300) {
       Object.assign(values, JSON.parse(request.responseText));
     } else {
-      // Non-fatal: page can still work, writes will go direct to Neon
-      console.warn('neon-storage: initial load returned HTTP ' + request.status + ' — running without cache');
+      console.warn('neon-storage: initial load HTTP ' + request.status);
     }
   } catch (error) {
     loadError = error;
-    console.warn('neon-storage: could not preload from Neon:', error.message || error);
+    console.warn('neon-storage: preload failed (page still works):', error.message || error);
   }
 
   // ── Helper: synchronous XHR with retries ──
   function syncRequest(method, url, body) {
-    const MAX_TRIES = 3;
+    const MAX_TRIES = 2;
     let lastErr = null;
     for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
       try {

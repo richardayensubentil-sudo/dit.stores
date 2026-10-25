@@ -503,7 +503,7 @@
         box-shadow: 0 12px 32px rgba(26, 32, 44, 0.18), 0 2px 8px rgba(26, 32, 44, 0.06);
         border: 1px solid var(--border-color);
         padding: 10px;
-        z-index: 200;
+        z-index: 9999;  /* high enough to always appear on top */
         opacity: 0;
         visibility: hidden;
         transform: translateY(-6px);
@@ -513,6 +513,36 @@
         opacity: 1;
         visibility: visible;
         transform: translateY(0);
+      }
+      /* Mobile: full-screen nav menu */
+      @media (max-width: 768px) {
+        .nav-dropdown-wrap.open .nav-dropdown-menu {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 100vw !important;
+          max-height: 100vh !important;
+          border-radius: 0 !important;
+          overflow-y: auto !important;
+          -webkit-overflow-scrolling: touch;
+          z-index: 99999 !important;
+          padding: 16px !important;
+          transform: none !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+        .nav-dropdown-item {
+          padding: 14px 12px !important;
+          font-size: 1rem !important;
+          min-height: 48px;
+          border-bottom: 1px solid var(--border-color);
+        }
+        .nav-dropdown-profile {
+          padding-top: 16px !important;
+          padding-bottom: 16px !important;
+        }
       }
       .nav-dropdown-profile {
         display: flex;
@@ -3255,16 +3285,6 @@
           font-size: 0.75rem;
         }
       }
-            /* Nav always visible on all screen sizes */
-      @media (max-width: 768px) {
-        .nav-dropdown-wrap { display: inline-block !important; }
-      }
-
-            /* Nav always visible on all screen sizes */
-      @media (max-width: 768px) {
-        .nav-dropdown-wrap { display: inline-block !important; }
-      }
-
       
         /* Nav dropdown: full-screen on mobile */
         @media (max-width: 768px) {
