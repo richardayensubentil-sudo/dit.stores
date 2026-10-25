@@ -3,9 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Personel Management</title>
-  <script>(function(){try{var t=window.neonStorage?window.neonStorage.getItem('dit_theme'):localStorage.getItem('dit_theme');document.documentElement.setAttribute('data-theme',t||'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
-</script>
+  <title>Personnel Management</title>
+  <script src="neon-storage.js"></script>
+  <script>
+    (function(){
+      try {
+        var t = window.neonStorage ? window.neonStorage.getItem('dit_theme') : localStorage.getItem('dit_theme');
+        document.documentElement.setAttribute('data-theme', t || 'light');
+      } catch(e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts -->
@@ -348,9 +357,62 @@
     .module-background { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; background: radial-gradient(circle at 0% 0%, #e0e7ff 0%, #f8fafc 50%); }
     .module-background canvas { width: 100%; height: 100%; display: block; }
     [data-theme="light"] .module-background { background: radial-gradient(circle at 0% 0%, #e0e7ff 0%, #f8fafc 50%); }
+
+    /* ── Mobile responsive ── */
+    @media (max-width: 768px) {
+      .main-header {
+        padding: 0.75rem 1rem !important;
+        gap: 0.5rem !important;
+        flex-direction: column !important;
+      }
+      .main-header > div:first-child > div > div:first-child { font-size: 1.3rem !important; }
+      .main-header > div:last-child {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+        width: 100%;
+      }
+      /* Nav always visible */
+      .nav-dropdown-wrap { display: inline-flex !important; }
+      /* Full-screen nav on mobile */
+      .nav-dropdown-wrap.open .nav-dropdown-menu {
+        position: fixed !important;
+        top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+        width: 100vw !important; max-height: 100vh !important;
+        border-radius: 0 !important; overflow-y: auto !important;
+        z-index: 9999 !important; padding: 56px 16px 16px !important;
+        transform: none !important; opacity: 1 !important; visibility: visible !important;
+      }
+      .nav-dropdown-item { padding: 14px 16px !important; font-size: 1rem !important; min-height: 48px; }
+      /* Close full-screen nav with X */
+      .nav-dropdown-menu::before {
+        content: '✕  Close';
+        display: block; position: sticky; top: -56px;
+        background: var(--accent); color: #fff;
+        padding: 14px 16px; font-weight: 700; font-size: 1rem;
+        cursor: pointer; margin: -56px -16px 12px; z-index: 1;
+      }
+      /* Table header wraps */
+      .table-header { flex-direction: column !important; align-items: stretch !important; }
+      .table-header > div:last-child { flex-wrap: wrap !important; gap: 0.5rem !important; }
+      .search-wrapper { width: 100% !important; }
+      /* Summary */
+      .horizontal-summary { flex-direction: column !important; }
+      .summary-breakdown { gap: 1rem !important; flex-wrap: wrap !important; }
+      .summary-total { font-size: 2rem !important; }
+      /* Status grid 2 cols */
+      .status-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .content-area { padding: 0.75rem !important; }
+      /* Modal slides up from bottom */
+      .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+      .modal { max-width: 100% !important; margin: 0 !important;
+               border-radius: 16px 16px 0 0 !important; max-height: 95vh !important; }
+    }
+    @media (max-width: 480px) {
+      .btn { padding: 0.5rem 0.75rem !important; font-size: 0.8rem !important; }
+      .status-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    }
   </style>
   <link rel="stylesheet" href="responsive.css" />
-  <script src="neon-storage.js"></script>
 </head>
 <body>
   <script>try { if (!JSON.parse(sessionStorage.getItem('loggedInUser') || 'null')) window.location.replace('index.html'); } catch (e) { sessionStorage.clear(); window.location.replace('index.html'); }</script>
@@ -757,7 +819,7 @@
     });
 
     function loadData() {
-      const storedP = (function(){try{return window.neonStorage?window.neonStorage.getItem('dit_personnel_data'):null;}catch(e){return null;}}());
+      const storedP = (function(){try{var v=window.neonStorage?window.neonStorage.getItem('dit_personnel_data'):null;return(v&&v!=='null'&&v.length>2)?v:null;}catch(e){return null;}}());
       if (storedP) {
         const storedPersonnel = JSON.parse(storedP);
         personnel = storedPersonnel.map(function (p) {
