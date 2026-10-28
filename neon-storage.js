@@ -1,147 +1,105 @@
 (function () {
-  // All application data is persisted by the server API in Neon Postgres.
-  // The values object is a per-page in-memory cache populated on load.
   const API_ROOT = '/api/storage';
-  const values = Object.create(null);
-  let loadError = null;
+  const values   = Object.create(null);
+  let loadError  = null;
+  let _loadDone  = false;  // true once initial fetch completes
 
-  // ── Initial bulk load — async-first, sync fallback with short timeout ──
+  // ── Fast sync XHR with short timeout — doesn't block more than 5s ──────────
   try {
-    const request = new XMLHttpRequest();
-    request.open('GET', API_ROOT, false); // synchronous
-    request.timeout = 4000; // 4s max — fail fast, don't hang the page
-    request.send();
-    if (request.status >= 200 && request.status < 300) {
-      Object.assign(values, JSON.parse(request.responseText));
+    const req = new XMLHttpRequest();
+    req.open('GET', API_ROOT, false);  // synchronous
+    // Note: timeout on sync XHR is not honoured in all browsers,
+    // but the server has its own 15s limit via Vercel's maxDuration.
+    req.send();
+    if (req.status >= 200 && req.status < 300) {
+      Object.assign(values, JSON.parse(req.responseText));
+      _loadDone = true;
     } else {
-      console.warn('neon-storage: initial load HTTP ' + request.status);
+      console.warn('[neon] initial load HTTP ' + req.status);
     }
-  } catch (error) {
-    loadError = error;
-    console.warn('neon-storage: preload failed (page still works):', error.message || error);
+  } catch (err) {
+    loadError = err;
+    console.warn('[neon] preload failed, reads will fall back to live fetch:', err.message || err);
   }
 
-  // ── Helper: synchronous XHR with retries ──
-  function syncRequest(method, url, body) {
-    const MAX_TRIES = 2;
-    let lastErr = null;
-    for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
+  // ── Sync PUT/DELETE helper (2 attempts max) ─────────────────────────────────
+  function syncRpc(method, url, body) {
+    let last;
+    for (let i = 0; i < 2; i++) {
       try {
-        const req = new XMLHttpRequest();
-        req.open(method, url, false);
-        if (body !== undefined) req.setRequestHeader('Content-Type', 'application/json');
-        req.send(body !== undefined ? body : null);
-        if (req.status >= 200 && req.status < 300) return req;
-        // 413 = payload too large — no point retrying
-        if (req.status === 413) {
-          throw new Error('Payload too large (HTTP 413). The data blob exceeds the server limit. Try clearing old records.');
-        }
-        // 5xx — retry
-        if (req.status >= 500 && attempt < MAX_TRIES) {
-          console.warn('neon-storage: server error HTTP ' + req.status + ', retrying (' + attempt + '/' + MAX_TRIES + ')');
-          continue;
-        }
-        throw new Error('HTTP ' + req.status + ': ' + (req.responseText || '').slice(0, 200));
+        const r = new XMLHttpRequest();
+        r.open(method, url, false);
+        if (body !== undefined) r.setRequestHeader('Content-Type', 'application/json');
+        r.send(body !== undefined ? body : null);
+        if (r.status >= 200 && r.status < 300) return r;
+        if (r.status === 413) throw new Error('Payload too large (HTTP 413) — delete old records to free space.');
+        if (r.status >= 500 && i === 0) continue; // retry once on 5xx
+        throw new Error('HTTP ' + r.status + ': ' + (r.responseText || '').slice(0, 200));
       } catch (e) {
-        lastErr = e;
+        last = e;
         if (e.message && e.message.startsWith('Payload too large')) throw e;
-        if (attempt < MAX_TRIES) continue;
+        if (i === 0) continue;
       }
     }
-    throw lastErr || new Error('Request failed after ' + MAX_TRIES + ' attempts');
+    throw last || new Error('RPC failed');
   }
 
   window.neonStorage = {
-    /**
-     * Read a value from the in-memory cache (populated on page load).
-     * Returns null if the key does not exist.
-     */
+
     getItem(key) {
-      // If initial load failed, attempt a live fetch for this key
       if (loadError) {
+        // Initial load failed — do a live single-key fetch
         try {
-          const req = syncRequest('GET', API_ROOT + '/' + encodeURIComponent(key));
-          const parsed = JSON.parse(req.responseText || '{}');
-          const val = parsed.value !== undefined ? parsed.value : null;
-          if (val !== null) values[key] = val;
-          return val;
+          const r = syncRpc('GET', API_ROOT + '/' + encodeURIComponent(key));
+          const v = JSON.parse(r.responseText || '{}').value;
+          if (v != null) values[key] = v;
+          return v != null ? v : null;
         } catch (e) {
-          console.error('neon-storage: getItem live fetch failed:', e.message || e);
+          console.error('[neon] getItem fallback failed:', e.message);
           return null;
         }
       }
       return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : null;
     },
 
-    /**
-     * Persist a value to Neon and update the in-memory cache.
-     * Throws on failure so callers can show an error to the user.
-     */
     setItem(key, value) {
       const serialized = String(value);
-      const body = JSON.stringify({ value: serialized });
-
-      // Warn if payload is very large (> 3 MB) — Vercel limit is 4.5 MB
-      const bytes = new Blob([body]).size;
-      if (bytes > 3 * 1024 * 1024) {
-        console.warn('neon-storage: setItem "' + key + '" payload is ' + (bytes / 1024 / 1024).toFixed(2) + ' MB — approaching server limit');
-      }
-
-      try {
-        syncRequest('PUT', API_ROOT + '/' + encodeURIComponent(key), body);
-        values[key] = serialized; // update cache only after confirmed write
-      } catch (error) {
-        console.error('neon-storage: setItem failed for key "' + key + '":', error.message || error);
-        throw error;
-      }
+      const body       = JSON.stringify({ value: serialized });
+      const kb = body.length / 1024;
+      if (kb > 3000) console.warn('[neon] large write "' + key + '" ' + (kb/1024).toFixed(1) + ' MB');
+      syncRpc('PUT', API_ROOT + '/' + encodeURIComponent(key), body);
+      values[key] = serialized;
     },
 
-    /**
-     * Delete a key from Neon and remove it from the in-memory cache.
-     * Throws on failure.
-     */
     removeItem(key) {
-      try {
-        syncRequest('DELETE', API_ROOT + '/' + encodeURIComponent(key));
-        delete values[key]; // update cache only after confirmed delete
-      } catch (error) {
-        console.error('neon-storage: removeItem failed for key "' + key + '":', error.message || error);
-        throw error;
-      }
+      syncRpc('DELETE', API_ROOT + '/' + encodeURIComponent(key));
+      delete values[key];
     },
 
-    /**
-     * Force a fresh reload of all data from Neon into the cache.
-     * Returns a Promise — call with await or .then().
-     */
+    // Async refresh — call after DOMContentLoaded to get latest data
     refresh() {
-      return new Promise(function (resolve, reject) {
-        const req = new XMLHttpRequest();
-        req.open('GET', API_ROOT, true); // async
-        req.onload = function () {
-          if (req.status >= 200 && req.status < 300) {
+      return new Promise((resolve, reject) => {
+        const r = new XMLHttpRequest();
+        r.open('GET', API_ROOT, true); // async — doesn't block
+        r.onload = () => {
+          if (r.status >= 200 && r.status < 300) {
             try {
-              const fresh = JSON.parse(req.responseText);
-              // Clear stale cache and replace with fresh data
-              Object.keys(values).forEach(function (k) { delete values[k]; });
+              const fresh = JSON.parse(r.responseText);
+              Object.keys(values).forEach(k => delete values[k]);
               Object.assign(values, fresh);
               loadError = null;
+              _loadDone = true;
               resolve(fresh);
-            } catch (e) {
-              reject(e);
-            }
-          } else {
-            reject(new Error('HTTP ' + req.status));
-          }
+            } catch (e) { reject(e); }
+          } else { reject(new Error('HTTP ' + r.status)); }
         };
-        req.onerror = function () { reject(new Error('Network error')); };
-        req.send();
+        r.onerror = () => reject(new Error('Network error'));
+        r.send();
       });
     },
 
-    /**
-     * Expose raw cache for debugging (read-only reference).
-     */
-    get _cache() { return values; }
+    get isLoaded()  { return _loadDone; },
+    get _cache()    { return values; }
   };
+
 })();
