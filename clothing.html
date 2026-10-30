@@ -7738,11 +7738,11 @@
           esc(titleSuffix) +
           "</title>\n<style>\n" +
           cs +
-          "\n</style>\n</head>\n<body>\n" +
+          "\n</style>\n<!-- /head -->\n<body>\n" +
           headerHTML +
           "\n" +
           bodyHTML +
-          "\n</body>\n</html>";
+          "\n<!-- /body -->\n</html>";
         sendToPrinter(html);
       }
 
@@ -10204,7 +10204,7 @@
         html +=
           "th.alpha-hdr { background-color: #e5e7eb; font-size: 7pt; font-weight: 600; text-transform: none; letter-spacing: 0; color: #000; }";
         html += "td.name-col { text-align: left; }";
-        html += "</style></head><body>";
+        html += "</style><!-- /head --><body>";
         html += "<h1>DIT CLOTHING MANAGEMENT — " + titleSuffix + "</h1>";
         html +=
           '<div class="subtitle">' +
@@ -10280,7 +10280,7 @@
           }
           html += "</tr>";
         });
-        html += "</tbody></table></body></html>";
+        html += "</tbody></table><!-- /body --></html>";
         var blob = new Blob(["\ufeff", html], { type: "application/msword" });
         var url = URL.createObjectURL(blob);
         var a = document.createElement("a");

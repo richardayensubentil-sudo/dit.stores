@@ -763,9 +763,16 @@
   <!-- JAVASCRIPT LOGIC -->
   <script>
         function toggleTheme() {
-            document.documentElement.removeAttribute('data-theme');
-            /* theme: set via neonStorage */
-        }
+      var html = document.documentElement;
+      var current = html.getAttribute('data-theme') || 'light';
+      var next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      try { if (window.neonStorage) window.neonStorage.setItem('dit_theme', next); } catch(e) {}
+      var moon = document.querySelector('.moon-icon');
+      var sun  = document.querySelector('.sun-icon');
+      if (moon) moon.style.display = next === 'dark' ? 'none' : 'block';
+      if (sun)  sun.style.display  = next === 'dark' ? 'block' : 'none';
+    }
     /* --- STATE MANAGEMENT --- */
     let jobs = [];
     let jobCounter = parseInt((function(){try{return window.neonStorage?window.neonStorage.getItem('ditJobCounter'):null;}catch(e){return null;}}())) || 1;
