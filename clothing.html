@@ -503,7 +503,7 @@
         box-shadow: 0 12px 32px rgba(26, 32, 44, 0.18), 0 2px 8px rgba(26, 32, 44, 0.06);
         border: 1px solid var(--border-color);
         padding: 10px;
-        z-index: 200;
+        z-index: 9999;  /* high enough to always appear on top */
         opacity: 0;
         visibility: hidden;
         transform: translateY(-6px);
@@ -513,6 +513,36 @@
         opacity: 1;
         visibility: visible;
         transform: translateY(0);
+      }
+      /* Mobile: full-screen nav menu */
+      @media (max-width: 768px) {
+        .nav-dropdown-wrap.open .nav-dropdown-menu {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 100vw !important;
+          max-height: 100vh !important;
+          border-radius: 0 !important;
+          overflow-y: auto !important;
+          -webkit-overflow-scrolling: touch;
+          z-index: 99999 !important;
+          padding: 16px !important;
+          transform: none !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+        .nav-dropdown-item {
+          padding: 14px 12px !important;
+          font-size: 1rem !important;
+          min-height: 48px;
+          border-bottom: 1px solid var(--border-color);
+        }
+        .nav-dropdown-profile {
+          padding-top: 16px !important;
+          padding-bottom: 16px !important;
+        }
       }
       .nav-dropdown-profile {
         display: flex;
@@ -3182,8 +3212,17 @@
         .main-container {
           padding: 16px;
         }
-        .header-right {
+        /* header-right non-nav elements hidden on mobile */
+        .header-right .user-info,
+        .header-right .date-badge-row,
+        .header-right .theme-toggle-btn {
           display: none;
+        }
+        /* nav button always visible on all screen sizes */
+        .header-right .nav-dropdown-wrap,
+        .nav-dropdown-wrap {
+          display: inline-block !important;
+          visibility: visible !important;
         }
         .header-left h1 {
           font-size: 1.5rem;
@@ -3246,6 +3285,24 @@
           font-size: 0.75rem;
         }
       }
+      
+        /* Nav dropdown: full-screen on mobile */
+        @media (max-width: 768px) {
+          .nav-dropdown-wrap { display: inline-block !important; visibility: visible !important; }
+          .nav-dropdown-wrap.open .nav-dropdown-menu {
+            position: fixed !important;
+            top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+            width: 100vw !important; max-height: 100vh !important;
+            border-radius: 0 !important; overflow-y: auto !important;
+            z-index: 9999 !important; padding: 56px 16px 16px !important;
+            transform: none !important; opacity: 1 !important; visibility: visible !important;
+          }
+          .nav-dropdown-item {
+            padding: 14px 16px !important;
+            font-size: 1rem !important;
+            min-height: 48px;
+          }
+        }
       @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
@@ -3316,7 +3373,9 @@
               </svg>
               <span id="currentDate"></span>
             </div>
-            <div class="nav-dropdown-wrap" id="navDropdownWrap" style="margin-bottom: 0; align-self: center">
+          </div>
+          <!-- Nav button moved outside date-badge-row so it stays visible on mobile -->
+          <div class="nav-dropdown-wrap" id="navDropdownWrap" style="margin-bottom: 0; align-self: center">
               <button type="button" class="nav-toggle-btn no-print" id="navToggleBtn" onclick="toggleNavDropdown(event)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -7679,11 +7738,11 @@
           esc(titleSuffix) +
           "</title>\n<style>\n" +
           cs +
-          "\n</style>\n</head>\n<body>\n" +
+          "\n</style>\n<!-- /head -->\n<body>\n" +
           headerHTML +
           "\n" +
           bodyHTML +
-          "\n</body>\n</html>";
+          "\n<!-- /body -->\n</html>";
         sendToPrinter(html);
       }
 
@@ -10145,7 +10204,7 @@
         html +=
           "th.alpha-hdr { background-color: #e5e7eb; font-size: 7pt; font-weight: 600; text-transform: none; letter-spacing: 0; color: #000; }";
         html += "td.name-col { text-align: left; }";
-        html += "</style></head><body>";
+        html += "</style><!-- /head --><body>";
         html += "<h1>DIT CLOTHING MANAGEMENT — " + titleSuffix + "</h1>";
         html +=
           '<div class="subtitle">' +
@@ -10221,7 +10280,7 @@
           }
           html += "</tr>";
         });
-        html += "</tbody></table></body></html>";
+        html += "</tbody></table><!-- /body --></html>";
         var blob = new Blob(["\ufeff", html], { type: "application/msword" });
         var url = URL.createObjectURL(blob);
         var a = document.createElement("a");
