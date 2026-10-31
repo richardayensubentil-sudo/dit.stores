@@ -11553,20 +11553,45 @@ body::after {
             }
 
             document.addEventListener('DOMContentLoaded', () => {
-              try {
-                loadState();
-                initApp();
-              } catch(e) {
-                console.error('[inv] init error:', e);
-                // Show error to user instead of silent hang
-                const main = document.querySelector('.main');
-                if (main) {
-                  const err = document.createElement('div');
-                  err.style.cssText = 'padding:2rem;text-align:center;color:#e53e3e;font-weight:600;';
-                  err.innerHTML = '<p>Failed to load inventory data.</p><p style="font-size:.9rem;margin-top:.5rem;font-weight:400">Error: ' + (e.message||e) + '</p><button onclick="location.reload()" style="margin-top:1rem;padding:.5rem 1.5rem;background:#3182ce;color:#fff;border:none;border-radius:6px;cursor:pointer;">Reload</button>';
-                  main.prepend(err);
-                }
+              // Show loading state immediately
+              const mainEl = document.querySelector('.main');
+              let loader = null;
+              if (mainEl) {
+                loader = document.createElement('div');
+                loader.id = 'invLoader';
+                loader.style.cssText = 'position:fixed;inset:0;background:var(--bg-main,#f8fafc);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;font-family:sans-serif;';
+                loader.innerHTML = '<div style="width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#0891b2;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div style="color:#64748b;font-weight:600;font-size:0.95rem;">Loading inventory...</div>';
+                document.body.appendChild(loader);
               }
+
+              // Load data asynchronously — does NOT block the browser
+              window.neonStorage.refresh().then(function() {
+                // Data is now in cache — load state from cache (instant)
+                try {
+                  loadState();
+                  initApp();
+                } catch(e) {
+                  console.error('[inv] init error:', e);
+                  if (mainEl) {
+                    const err = document.createElement('div');
+                    err.style.cssText = 'padding:2rem;text-align:center;color:#e53e3e;font-weight:600;';
+                    err.innerHTML = '<p>Failed to load inventory data.</p><p style="font-size:.9rem;margin-top:.5rem;font-weight:400">Error: ' + (e.message||e) + '</p><button onclick="location.reload()" style="margin-top:1rem;padding:.5rem 1.5rem;background:#3182ce;color:#fff;border:none;border-radius:6px;cursor:pointer;">Reload</button>';
+                    mainEl.prepend(err);
+                  }
+                }
+                // Remove loader
+                if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+              }).catch(function(err) {
+                // Async load failed — try sync fallback (smaller, one key only)
+                console.warn('[inv] async load failed, trying sync fallback:', err.message);
+                try {
+                  loadState();
+                  initApp();
+                } catch(e) {
+                  console.error('[inv] sync fallback also failed:', e);
+                }
+                if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+              });
             });
 
             var activitySnapshot = null;
@@ -11644,7 +11669,7 @@ body::after {
                         if (!Array.isArray(state.departments) || state.departments.length === 0) state.departments = defaultState.departments.slice();
                         const sharedDepartments = getSharedDepartments();
                         if (sharedDepartments) state.departments = [...new Set(state.departments.concat(sharedDepartments))];
-                        else memoryStore.setItem(DEPARTMENTS_KEY, JSON.stringify(state.departments));
+                        else { try { setTimeout(function(){ memoryStore.setItem(DEPARTMENTS_KEY, JSON.stringify(state.departments)); }, 0); } catch(e){} }
                         if (!state.departments.includes(state.activeDept)) state.activeDept = state.departments[0];
                         if (typeof state.defaultDept === 'undefined' || !state.departments.includes(state.defaultDept)) state.defaultDept = state.departments.includes('DIT') ? 'DIT' : state.departments[0];
                         if (!state.deptPasswords || typeof state.deptPasswords !== 'object') state.deptPasswords = {};
@@ -12090,11 +12115,12 @@ body::after {
                 ensureDefaultStores();
 
                 function revealActiveDeptData() {
+                    // Yield to browser between each step to prevent "page unresponsive"
                     renderSidebarCategories();
                     renderSidebarOffices();
-                    updateDashboard();
-                    renderMainTable();
-                    updateSavedDocsBadge();
+                    setTimeout(function() { updateDashboard(); }, 0);
+                    setTimeout(function() { renderMainTable(); }, 50);
+                    setTimeout(function() { updateSavedDocsBadge(); }, 100);
                 }
 
                 revealActiveDeptData();
@@ -12142,7 +12168,6 @@ body::after {
                 tbody.innerHTML = '';
                 const items = getFilteredItems();
                 if (items.length > 200) console.log('[inv] rendering ' + items.length + ' items');
-                if (items.length > 200) console.log('[inv] rendering ' + items.length + ' items');
 
                 // Determine if we're viewing the default Stores office
                 const activeOff = state.data.offices.find(o => o.dept === state.activeDept && o.name === state.activeOffice);
@@ -12162,14 +12187,31 @@ body::after {
                     tbody.innerHTML = '<tr><td class="empty-table-msg" colspan="' + (isStoresView ? 13 : 12) + '">No items found. Add items or adjust filters.</td></tr>';
                     return;
                 }
-                items.forEach((item, idx) => {
-                    const tr = document.createElement('tr');
-                    if (_selectedItemIds.has(item.id)) tr.classList.add('selected-row');
-                    tr.innerHTML = renderDefaultStoreRow(item, idx, isStoresView);
-                    tbody.appendChild(tr);
-                });
-                updateSelectAllCheckbox();
-                applyColVisibility();
+
+                // CHUNKED RENDERING — render 25 items per frame, yield between batches
+                // This prevents "page unresponsive" errors on large inventories
+                var _chunkIdx = 0;
+                var _chunkSize = 25;
+                function renderChunk() {
+                    var endIdx = Math.min(_chunkIdx + _chunkSize, items.length);
+                    for (var i = _chunkIdx; i < endIdx; i++) {
+                        var item = items[i];
+                        var tr = document.createElement('tr');
+                        if (_selectedItemIds.has(item.id)) tr.classList.add('selected-row');
+                        tr.innerHTML = renderDefaultStoreRow(item, i, isStoresView);
+                        tbody.appendChild(tr);
+                    }
+                    _chunkIdx = endIdx;
+                    if (_chunkIdx < items.length) {
+                        // Yield to browser — let it paint and handle user input
+                        requestAnimationFrame(renderChunk);
+                    } else {
+                        // All rows rendered — run post-processing
+                        updateSelectAllCheckbox();
+                        applyColVisibility();
+                    }
+                }
+                renderChunk();
             }
 
             function renderDefaultStoreRow(item, idx, isStoresView) {
