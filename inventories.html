@@ -11553,20 +11553,19 @@ body::after {
             }
 
             document.addEventListener('DOMContentLoaded', () => {
-              // Show loading state immediately
+              // Show loading state immediately — page is responsive during load
               const mainEl = document.querySelector('.main');
               let loader = null;
               if (mainEl) {
                 loader = document.createElement('div');
                 loader.id = 'invLoader';
                 loader.style.cssText = 'position:fixed;inset:0;background:var(--bg-main,#f8fafc);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;font-family:sans-serif;';
-                loader.innerHTML = '<div style="width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#0891b2;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div style="color:#64748b;font-weight:600;font-size:0.95rem;">Loading inventory...</div>';
+                loader.innerHTML = '<div style="width:44px;height:44px;border:4px solid #e2e8f0;border-top-color:#0891b2;border-radius:50%;animation:spin .8s linear infinite;"></div><div style="color:#64748b;font-weight:600;font-size:1rem;">Loading inventory data...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
                 document.body.appendChild(loader);
               }
 
-              // Load data asynchronously — does NOT block the browser
-              window.neonStorage.refresh().then(function() {
-                // Data is now in cache — load state from cache (instant)
+              // Wait for neon-storage to finish loading ALL data, then init
+              window.neonStorage.ready().then(function() {
                 try {
                   loadState();
                   initApp();
@@ -11575,21 +11574,14 @@ body::after {
                   if (mainEl) {
                     const err = document.createElement('div');
                     err.style.cssText = 'padding:2rem;text-align:center;color:#e53e3e;font-weight:600;';
-                    err.innerHTML = '<p>Failed to load inventory data.</p><p style="font-size:.9rem;margin-top:.5rem;font-weight:400">Error: ' + (e.message||e) + '</p><button onclick="location.reload()" style="margin-top:1rem;padding:.5rem 1.5rem;background:#3182ce;color:#fff;border:none;border-radius:6px;cursor:pointer;">Reload</button>';
+                    err.innerHTML = '<p>Failed to load inventory data.</p><button onclick="location.reload()" style="margin-top:1rem;padding:.5rem 1.5rem;background:#3182ce;color:#fff;border:none;border-radius:6px;cursor:pointer;">Reload</button>';
                     mainEl.prepend(err);
                   }
                 }
-                // Remove loader
                 if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
               }).catch(function(err) {
-                // Async load failed — try sync fallback (smaller, one key only)
-                console.warn('[inv] async load failed, trying sync fallback:', err.message);
-                try {
-                  loadState();
-                  initApp();
-                } catch(e) {
-                  console.error('[inv] sync fallback also failed:', e);
-                }
+                console.warn('[inv] ready() failed:', err);
+                try { loadState(); initApp(); } catch(e) { console.error(e); }
                 if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
               });
             });
@@ -14291,13 +14283,13 @@ body::after {
         <script>
           function toggleTheme() {
       var html = document.documentElement;
-      var current = html.getAttribute('data-theme') || 'light';
-      var next = current === 'dark' ? 'light' : 'dark';
+      var cur = html.getAttribute('data-theme') || 'light';
+      var next = cur === 'dark' ? 'light' : 'dark';
       html.setAttribute('data-theme', next);
-      try { if (window.neonStorage) window.neonStorage.setItem('dit_theme', next); } catch(e) {}
-      // Update icons
-      var themeIcon = document.getElementById('themeIcon');
-      if (themeIcon) themeIcon.className = next === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      try { localStorage.setItem('dit_theme', next); } catch(e) {}
+      try { if (window.neonStorage) window.neonStorage.setItem('dit_theme', next).catch(function(){}); } catch(e) {}
+      var icon = document.getElementById('themeIcon');
+      if (icon) icon.className = next === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
       var moon = document.querySelector('.moon-icon');
       var sun  = document.querySelector('.sun-icon');
       if (moon) moon.style.display = next === 'dark' ? 'none' : 'block';

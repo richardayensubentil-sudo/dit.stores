@@ -638,10 +638,19 @@
       document.getElementById('themeIcon').className = t==='dark'?'fa-solid fa-sun':'fa-solid fa-moon';
     }
     try{applyTheme(memoryStore.getItem('dit_theme')||'light');}catch(e){applyTheme('light');}
-    function toggleTheme(){
-      const next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
-      applyTheme(next);
-      try{memoryStore.setItem('dit_theme',next);}catch(e){}
+    function toggleTheme() {
+      var html = document.documentElement;
+      var cur = html.getAttribute('data-theme') || 'light';
+      var next = cur === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      try { localStorage.setItem('dit_theme', next); } catch(e) {}
+      try { if (window.neonStorage) window.neonStorage.setItem('dit_theme', next).catch(function(){}); } catch(e) {}
+      var icon = document.getElementById('themeIcon');
+      if (icon) icon.className = next === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      var moon = document.querySelector('.moon-icon');
+      var sun  = document.querySelector('.sun-icon');
+      if (moon) moon.style.display = next === 'dark' ? 'none' : 'block';
+      if (sun)  sun.style.display  = next === 'dark' ? 'block' : 'none';
     }
 
     /* ── Clock & date ── */

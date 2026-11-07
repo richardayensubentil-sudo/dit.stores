@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Inventory System</title>
-    <script>document.documentElement.setAttribute('data-theme', (window.neonStorage?window.neonStorage.getItem('dit_theme'):null) || 'light');</script>
+    <script>(function(){try{var t=localStorage.getItem('dit_theme');document.documentElement.setAttribute('data-theme',t||'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
     <link
@@ -1099,25 +1099,19 @@
 
       // --- Theme Toggle ---
       function toggleTheme() {
-        const html = document.documentElement;
-        const currentTheme = html.getAttribute('data-theme') || 'light';
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', newTheme);
-        memoryStore.setItem('dit_theme', newTheme);
-        
-        const text = document.querySelector('.theme-text');
-        const moonIcon = document.querySelector('.icon-moon');
-        const sunIcon = document.querySelector('.icon-sun');
-        if (newTheme === 'light') {
-          text.textContent = 'Dark Mode';
-          moonIcon.style.display = 'none';
-          sunIcon.style.display = 'block';
-        } else {
-          text.textContent = 'Light Mode';
-          moonIcon.style.display = 'block';
-          sunIcon.style.display = 'none';
-        }
-      }
+      var html = document.documentElement;
+      var cur = html.getAttribute('data-theme') || 'light';
+      var next = cur === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      try { localStorage.setItem('dit_theme', next); } catch(e) {}
+      try { if (window.neonStorage) window.neonStorage.setItem('dit_theme', next).catch(function(){}); } catch(e) {}
+      var icon = document.getElementById('themeIcon');
+      if (icon) icon.className = next === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      var moon = document.querySelector('.moon-icon');
+      var sun  = document.querySelector('.sun-icon');
+      if (moon) moon.style.display = next === 'dark' ? 'none' : 'block';
+      if (sun)  sun.style.display  = next === 'dark' ? 'block' : 'none';
+    }
 
       (function initTheme() {
         const savedTheme = memoryStore.getItem('dit_theme') || 'light';

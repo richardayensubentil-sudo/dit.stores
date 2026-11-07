@@ -1,131 +1,115 @@
+/**
+ * neon-storage.js — Non-blocking Neon storage layer
+ * 
+ * DESIGN: Zero synchronous XHR. All reads go through an async cache.
+ * Pages must call neonStorage.ready() which resolves when data is loaded.
+ * Writes (setItem/removeItem) are fire-and-forget async with retry.
+ */
 (function () {
-  const API_ROOT = '/api/storage';
-  const values   = Object.create(null);
-  let loadError  = null;
-  let _bulkDone  = false;
+  const API = '/api/storage';
+  const cache = Object.create(null);
+  let _ready = false;
+  let _readyResolvers = [];
+  let _readyPromise = new Promise(r => _readyResolvers.push(r));
 
-  // ── Async bulk load (non-blocking) — runs in background ─────────────────────
-  // Does NOT block the page. Items populate the cache as they arrive.
-  (function asyncBulkLoad() {
-    try {
-      const req = new XMLHttpRequest();
-      req.open('GET', API_ROOT, true); // ASYNC — does not block
-      req.onload = function () {
-        if (req.status >= 200 && req.status < 300) {
-          try {
-            Object.assign(values, JSON.parse(req.responseText));
-            _bulkDone = true;
-          } catch (e) { loadError = e; }
-        } else {
-          loadError = new Error('HTTP ' + req.status);
-        }
-      };
-      req.onerror = function () { loadError = new Error('Network error'); };
-      req.send();
-    } catch (err) {
-      loadError = err;
-    }
-  })();
-
-  // ── Sync single-key fetch (only used as fallback if cache is empty) ────────
-  // This is fast because it fetches ONE small key, not ALL keys.
-  function syncGetKey(key) {
-    try {
-      const req = new XMLHttpRequest();
-      req.open('GET', API_ROOT + '/' + encodeURIComponent(key), false);
-      req.send();
-      if (req.status >= 200 && req.status < 300) {
-        const v = JSON.parse(req.responseText || '{}').value;
-        if (v != null) values[key] = v;
-        return v != null ? v : null;
-      }
-    } catch (e) { /* fall through to null */ }
-    return null;
+  // ── Async fetch with timeout ────────────────────────────────────────────────
+  function fetchWithTimeout(url, opts, ms) {
+    ms = ms || 8000;
+    return new Promise((res, rej) => {
+      const t = setTimeout(() => rej(new Error('timeout')), ms);
+      fetch(url, opts).then(r => { clearTimeout(t); res(r); }).catch(e => { clearTimeout(t); rej(e); });
+    });
   }
 
-  // ── Sync write helper (2 attempts) ──────────────────────────────────────────
-  function syncRpc(method, url, body) {
-    let last;
-    for (let i = 0; i < 2; i++) {
-      try {
-        const r = new XMLHttpRequest();
-        r.open(method, url, false);
-        if (body !== undefined) r.setRequestHeader('Content-Type', 'application/json');
-        r.send(body !== undefined ? body : null);
-        if (r.status >= 200 && r.status < 300) return r;
-        if (r.status === 413) throw new Error('Payload too large (HTTP 413) — delete old records.');
-        if (r.status >= 500 && i === 0) continue;
-        throw new Error('HTTP ' + r.status + ': ' + (r.responseText || '').slice(0, 200));
-      } catch (e) {
-        last = e;
-        if (e.message && e.message.startsWith('Payload too large')) throw e;
-        if (i === 0) continue;
-      }
+  // ── Initial bulk load (async — never blocks the page) ──────────────────────
+  fetchWithTimeout(API, {}, 10000)
+    .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+    .then(data => {
+      Object.assign(cache, data);
+      _ready = true;
+      _readyResolvers.forEach(r => r(data));
+      _readyResolvers = [];
+    })
+    .catch(err => {
+      console.warn('[neon] bulk load failed:', err.message);
+      // Still resolve so pages don't hang forever
+      _ready = true;
+      _readyResolvers.forEach(r => r({}));
+      _readyResolvers = [];
+    });
+
+  // ── Async write with retry ──────────────────────────────────────────────────
+  function asyncWrite(method, key, value) {
+    const url = API + '/' + encodeURIComponent(key);
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (value !== undefined) opts.body = JSON.stringify({ value: String(value) });
+
+    let attempts = 0;
+    function attempt() {
+      attempts++;
+      return fetchWithTimeout(url, opts, 6000)
+        .then(r => {
+          if (!r.ok && r.status !== 204) {
+            return r.text().then(t => { throw new Error('HTTP ' + r.status + ': ' + t.slice(0,100)); });
+          }
+          if (value !== undefined) cache[key] = String(value);
+          else delete cache[key];
+        })
+        .catch(err => {
+          if (attempts < 2) return new Promise(r => setTimeout(r, 500)).then(attempt);
+          console.error('[neon] ' + method + ' "' + key + '" failed:', err.message);
+          throw err;
+        });
     }
-    throw last || new Error('RPC failed');
+    return attempt();
   }
 
   window.neonStorage = {
-
     /**
-     * Read a value.
-     * 1. Check in-memory cache (instant — the common path after async load completes)
-     * 2. If not in cache, do a quick sync fetch for this ONE key only
+     * Get a value. Returns from cache synchronously if loaded,
+     * otherwise returns null (use ready().then() to ensure data is available).
      */
     getItem(key) {
-      if (Object.prototype.hasOwnProperty.call(values, key)) {
-        return values[key];
-      }
-      // Cache miss — fetch this one key (fast, small payload)
-      return syncGetKey(key);
+      return Object.prototype.hasOwnProperty.call(cache, key) ? cache[key] : null;
     },
 
     /**
-     * Persist a value to Neon and update the cache.
+     * Set a value. Async fire-and-forget — updates cache immediately,
+     * persists to Neon in background. Throws on persistent failure.
      */
     setItem(key, value) {
-      const serialized = String(value);
-      const body = JSON.stringify({ value: serialized });
-      const kb = body.length / 1024;
-      if (kb > 3000) console.warn('[neon] large write "' + key + '" ' + (kb / 1024).toFixed(1) + ' MB');
-      syncRpc('PUT', API_ROOT + '/' + encodeURIComponent(key), body);
-      values[key] = serialized;
+      cache[key] = String(value); // update cache immediately
+      return asyncWrite('PUT', key, value);
     },
 
     /**
-     * Delete a key from Neon and the cache.
+     * Remove a value. Async.
      */
     removeItem(key) {
-      syncRpc('DELETE', API_ROOT + '/' + encodeURIComponent(key));
-      delete values[key];
+      delete cache[key];
+      return asyncWrite('DELETE', key);
     },
 
     /**
-     * Async refresh — replaces entire cache with fresh data from Neon.
-     * Non-blocking. Call after DOMContentLoaded for live stats.
+     * Returns a Promise that resolves when the initial bulk load is done.
+     * Call this before reading data at page init.
+     */
+    ready() { return _readyPromise; },
+
+    /**
+     * Force a full refresh from Neon.
      */
     refresh() {
-      return new Promise((resolve, reject) => {
-        const r = new XMLHttpRequest();
-        r.open('GET', API_ROOT, true);
-        r.onload = () => {
-          if (r.status >= 200 && r.status < 300) {
-            try {
-              const fresh = JSON.parse(r.responseText);
-              Object.keys(values).forEach(k => delete values[k]);
-              Object.assign(values, fresh);
-              loadError = null;
-              _bulkDone = true;
-              resolve(fresh);
-            } catch (e) { reject(e); }
-          } else { reject(new Error('HTTP ' + r.status)); }
-        };
-        r.onerror = () => reject(new Error('Network error'));
-        r.send();
-      });
+      return fetchWithTimeout(API, {}, 10000)
+        .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+        .then(data => {
+          Object.keys(cache).forEach(k => delete cache[k]);
+          Object.assign(cache, data);
+          return data;
+        });
     },
 
-    get isLoaded()  { return _bulkDone; },
-    get _cache()    { return values; }
+    get isLoaded() { return _ready; },
+    get _cache()   { return cache; }
   };
 })();
