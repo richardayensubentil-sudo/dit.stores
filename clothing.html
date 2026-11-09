@@ -6491,8 +6491,8 @@
             nextSoldierSvcNo = parseInt(d.nextSoldier) || 1;
           } else {
             personnelData = [];
-            recalculateCounters();
-            saveData();
+              recalculateCounters();
+              /* do NOT saveData() on empty init — prevents wiping Neon data */
           }
         } catch (e) {
           personnelData = [];

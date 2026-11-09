@@ -11676,7 +11676,7 @@ body::after {
                             if (item.type === 'bulk' && typeof item.bodyNo === 'undefined') item.bodyNo = '';
                         });
                         delete state.data.savedForms;
-                        saveState(false);
+                        /* NOTE: do NOT saveState here — would overwrite Neon with stale data on init */
                     } catch (e) { console.error('LoadState error:', e); state = JSON.parse(JSON.stringify(defaultState)); }
                 }
             }

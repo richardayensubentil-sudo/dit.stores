@@ -827,10 +827,7 @@
           return { ...p, arm: p.arm === 'DCE' ? 'DCS' : p.arm, userId: p.userId || getCurrentUserId() };
         });
         if (storedPersonnel.some(p => p.arm === 'DCE')) saveData();
-      } else {
-        personnel = [];
-        saveData();
-      }
+      } else { personnel = []; /* do NOT save empty data on init */ }
     }
 
     function saveData() {
