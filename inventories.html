@@ -11590,8 +11590,17 @@ body::after {
             function recordInventoryActivity(action, detail, office, itemName) {
               try {
                 var activities = JSON.parse(memoryStore.getItem('dit_activity_log_v1') || '[]');
-                activities.push({ module: 'inventory', action: action, detail: detail, office: office || '', itemName: itemName || '', user: currentUser || 'Unknown user', date: new Date().toISOString() });
-                memoryStore.setItem('dit_activity_log_v1', JSON.stringify(activities.slice(-1000)));
+                activities.push({
+                  module: 'inventory',
+                  action: (action || '').slice(0, 100),
+                  detail: (detail || '').slice(0, 200),  // cap to prevent bloat
+                  office: (office || '').slice(0, 50),
+                  itemName: (itemName || '').slice(0, 100),
+                  user: (currentUser || 'Unknown').slice(0, 50),
+                  date: new Date().toISOString()
+                });
+                // Keep only last 200 entries (not 1000) to prevent DB bloat
+                memoryStore.setItem('dit_activity_log_v1', JSON.stringify(activities.slice(-200)));
               } catch (e) {}
             }
             function inventoryChanges(before, after, label) {
