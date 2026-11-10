@@ -594,6 +594,13 @@
         <a href="reports.html" class="ab-btn ab-btn-ghost">
           <i class="fa-solid fa-chart-line"></i> View Reports
         </a>
+        <button class="ab-btn ab-btn-ghost" onclick="downloadBackup()" title="Download all data as JSON backup file">
+          <i class="fa-solid fa-download"></i> Backup Data
+        </button>
+        <label class="ab-btn ab-btn-ghost" style="cursor:pointer;" title="Restore data from a backup file">
+          <i class="fa-solid fa-upload"></i> Restore
+          <input type="file" accept=".json" style="display:none" onchange="restoreBackup(event)">
+        </label>
       </div>
     </div>
 
@@ -651,6 +658,44 @@
       var sun  = document.querySelector('.sun-icon');
       if (moon) moon.style.display = next === 'dark' ? 'none' : 'block';
       if (sun)  sun.style.display  = next === 'dark' ? 'block' : 'none';
+    }
+
+    /* ── Backup & Restore ── */
+    async function downloadBackup() {
+      showToast('Preparing backup...','success');
+      try {
+        await memoryStore.refresh();
+        const cache = memoryStore._cache;
+        const backup = { version:1, createdAt:new Date().toISOString(), data:{} };
+        Object.keys(cache).forEach(function(k) {
+          const v = cache[k];
+          if (v && v !== '[]' && v !== '{}' && v !== 'null' && v.length > 2) backup.data[k] = v;
+        });
+        const blob = new Blob([JSON.stringify(backup,null,2)], {type:'application/json'});
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = 'dit-backup-'+new Date().toISOString().slice(0,10)+'.json';
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+        showToast('Backup downloaded — store this file safely!','success');
+      } catch(e) { showToast('Backup failed: '+e.message,'error'); }
+    }
+
+    async function restoreBackup(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      event.target.value = '';
+      if (!confirm('This will OVERWRITE all current data with the backup.\n\nAre you absolutely sure?')) return;
+      try {
+        const text = await file.text();
+        const backup = JSON.parse(text);
+        if (!backup.version || !backup.data) { showToast('Invalid backup file','error'); return; }
+        const keys = Object.keys(backup.data);
+        showToast('Restoring '+keys.length+' keys...','success');
+        for (let i=0; i<keys.length; i++) { await memoryStore.setItem(keys[i], backup.data[keys[i]]); }
+        showToast('Restore complete! Reloading...','success');
+        setTimeout(function(){ location.reload(); },1500);
+      } catch(e) { showToast('Restore failed: '+e.message,'error'); }
     }
 
     /* ── Clock & date ── */
