@@ -1,14 +1,11 @@
 /**
- * neon-storage.js
- * 
- * SAFE HYBRID APPROACH:
- * 1. Tries synchronous XHR first (instant data, prevents empty overwrites)
- * 2. If sync fails (timeout/network), falls back to async load
- * 3. setItem/removeItem are async (non-blocking writes)
- * 4. ready() always resolves — pages can await it for guaranteed data
- * 
- * This prevents the critical bug where async-only loading causes pages
- * to initialize with empty data and overwrite real data in Neon.
+ * neon-storage.js — Client-side storage layer
+ *
+ * Architecture:
+ * 1. Synchronous XHR bulk load on script init — data in cache before page renders
+ * 2. Async writes (fetch) — non-blocking, don't freeze the UI
+ * 3. ready() promise — pages can await data availability
+ * 4. NEVER saves empty data on init — prevents wiping Neon accidentally
  */
 (function () {
   var API = '/api/storage';
@@ -18,77 +15,96 @@
 
   function _resolveReady() {
     _ready = true;
-    _readyCbs.forEach(function(cb) { try { cb(); } catch(e) {} });
+    var cbs = _readyCbs.slice();
     _readyCbs = [];
+    cbs.forEach(function(cb) { try { cb(cache); } catch(e) {} });
   }
 
-  // ── 1. Try synchronous XHR (fast path — page renders with data immediately) ─
-  var syncOk = false;
+  // ── 1. Synchronous bulk load — data ready before page script runs ────────────
+  // This is intentional: prevents race condition where pages save empty data
+  // before the async load completes (which would wipe Neon data).
+  var syncLoaded = false;
   try {
-    var syncReq = new XMLHttpRequest();
-    syncReq.open('GET', API, false); // synchronous
-    syncReq.send();
-    if (syncReq.status >= 200 && syncReq.status < 300) {
-      var parsed = JSON.parse(syncReq.responseText);
-      Object.assign(cache, parsed);
-      syncOk = true;
-      _resolveReady();
+    var req = new XMLHttpRequest();
+    req.open('GET', API, false); // synchronous
+    req.send();
+    if (req.status >= 200 && req.status < 300) {
+      var parsed = JSON.parse(req.responseText);
+      if (parsed && typeof parsed === 'object') {
+        Object.assign(cache, parsed);
+        syncLoaded = true;
+      }
+    } else {
+      console.warn('[neon] bulk load HTTP ' + req.status + ' — will retry async');
     }
   } catch(e) {
-    // Sync failed — will use async fallback below
-    console.warn('[neon] sync load failed, using async:', e.message);
+    console.warn('[neon] sync load failed, trying async:', e.message);
   }
 
-  // ── 2. Async fallback (if sync failed) ──────────────────────────────────────
-  if (!syncOk) {
-    fetch(API)
-      .then(function(r) { return r.ok ? r.json() : Promise.reject('HTTP ' + r.status); })
-      .then(function(data) {
-        Object.assign(cache, data);
-        _resolveReady();
-      })
-      .catch(function(e) {
-        console.warn('[neon] async load also failed:', e);
-        _resolveReady(); // resolve anyway so pages don't hang
+  if (syncLoaded) {
+    _resolveReady();
+  } else {
+    // Async fallback if sync failed (e.g. network blip on cold start)
+    var retryReq = new XMLHttpRequest();
+    retryReq.open('GET', API, true); // async
+    retryReq.onload = function() {
+      if (retryReq.status >= 200 && retryReq.status < 300) {
+        try {
+          var d = JSON.parse(retryReq.responseText);
+          if (d && typeof d === 'object') Object.assign(cache, d);
+        } catch(e) {}
+      }
+      _resolveReady();
+    };
+    retryReq.onerror = function() { _resolveReady(); };
+    retryReq.send();
+  }
+
+  // ── 2. Async write with retry ────────────────────────────────────────────────
+  function asyncWrite(method, key, value) {
+    var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
+    if (value !== undefined) opts.body = JSON.stringify({ value: String(value) });
+    var url = API + '/' + encodeURIComponent(key);
+
+    var attempt = 0;
+    function run() {
+      attempt++;
+      return fetch(url, opts).then(function(r) {
+        if (!r.ok && r.status !== 204) {
+          if (r.status >= 500 && attempt < 2) return new Promise(function(res){ setTimeout(res, 300); }).then(run);
+          return r.text().then(function(t) {
+            var msg = 'HTTP ' + r.status;
+            try { msg = JSON.parse(t).error || msg; } catch(e) {}
+            throw new Error(msg);
+          });
+        }
+      }).catch(function(err) {
+        if (attempt < 2 && err.message !== 'Failed to fetch') {
+          return new Promise(function(res){ setTimeout(res, 500); }).then(run);
+        }
+        console.error('[neon] ' + method + ' "' + key + '" failed:', err.message);
+        throw err;
       });
-  }
-
-  // ── 3. Async write (fire-and-forget, non-blocking) ───────────────────────────
-  function asyncPut(key, value) {
-    var body = JSON.stringify({ value: String(value) });
-    return fetch(API + '/' + encodeURIComponent(key), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: body
-    }).catch(function(e) {
-      console.error('[neon] PUT "' + key + '" failed:', e.message);
-      throw e;
-    });
-  }
-
-  function asyncDelete(key) {
-    return fetch(API + '/' + encodeURIComponent(key), { method: 'DELETE' })
-      .catch(function(e) {
-        console.error('[neon] DELETE "' + key + '" failed:', e.message);
-        throw e;
-      });
+    }
+    return run();
   }
 
   window.neonStorage = {
     /**
-     * Read from cache. Returns null if not loaded yet.
-     * When sync load succeeds (normal case), data is always available immediately.
+     * Read from cache synchronously.
+     * Returns null if key not found.
      */
     getItem: function(key) {
       return Object.prototype.hasOwnProperty.call(cache, key) ? cache[key] : null;
     },
 
     /**
-     * Write value. Updates cache immediately, persists async (non-blocking).
+     * Write value. Updates cache immediately, persists async.
+     * Returns a Promise.
      */
     setItem: function(key, value) {
       cache[key] = String(value);
-      return asyncPut(key, value);
+      return asyncWrite('PUT', key, value);
     },
 
     /**
@@ -96,32 +112,36 @@
      */
     removeItem: function(key) {
       delete cache[key];
-      return asyncDelete(key);
+      return asyncWrite('DELETE', key);
     },
 
     /**
-     * Returns a Promise that resolves when data is loaded.
-     * Resolves immediately if sync load already succeeded.
+     * Resolves when initial data load is complete.
+     * Use in page init: window.neonStorage.ready().then(() => { ... })
      */
     ready: function() {
       if (_ready) return Promise.resolve(cache);
-      return new Promise(function(res) { _readyCbs.push(function() { res(cache); }); });
+      return new Promise(function(res) {
+        _readyCbs.push(function(c) { res(c); });
+      });
     },
 
     /**
-     * Async full refresh (for dashboard live stats, etc.)
+     * Force full async refresh (e.g. for dashboard live stats).
      */
     refresh: function() {
       return fetch(API)
         .then(function(r) { return r.ok ? r.json() : Promise.reject('HTTP ' + r.status); })
-        .then(function(data) {
-          Object.keys(cache).forEach(function(k) { delete cache[k]; });
-          Object.assign(cache, data);
-          return data;
+        .then(function(d) {
+          if (d && typeof d === 'object') {
+            Object.keys(cache).forEach(function(k) { delete cache[k]; });
+            Object.assign(cache, d);
+          }
+          return d;
         });
     },
 
     get isLoaded() { return _ready; },
-    get _cache()   { return cache; }
+    get _cache() { return cache; }
   };
 })();

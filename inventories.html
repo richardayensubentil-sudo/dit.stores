@@ -11634,6 +11634,17 @@ body::after {
               sortOffices();
               const doSave = function() {
                 try {
+                  // Before saving, sync departments from the shared key (index.html may have renamed/deleted)
+                  // This prevents a stale in-memory state from overwriting renames done in index.html
+                  var sharedDepts = getSharedDepartments();
+                  if (sharedDepts && sharedDepts.length > 0) {
+                    // Merge: keep any dept that exists in shared, plus any new ones in state
+                    var sharedSet = new Set(sharedDepts.map(function(d){ return d.toUpperCase(); }));
+                    var stateDepts = (state.departments || []);
+                    // Replace state departments with the authoritative shared list
+                    // but preserve any that are in state but were newly added this session
+                    state.departments = sharedDepts;
+                  }
                   const payload = JSON.stringify(state);
                   memoryStore.setItem(STORAGE_KEY, payload);
                   // Audit separately — don't block the save
@@ -12438,7 +12449,13 @@ body::after {
 
             if (document.getElementById('newDeptBtn') && document.getElementById('newDeptSaveBtn')) {
             document.getElementById('newDeptBtn').addEventListener('click', () => { if (!isAdminMode) return showToast('Only an administrator can create a department.', 'error'); _deptModalMode = 'add'; _deptModalEditTarget = null; document.getElementById('newDeptModalTitleText').textContent = 'Add New Department'; document.getElementById('newDeptNameInput').value = ''; openModal('newDeptModal'); setTimeout(() => document.getElementById('newDeptNameInput').focus(), 200); });
-            document.getElementById('newDeptSaveBtn').addEventListener('click', () => { if (!isAdminMode) { closeModal('newDeptModal'); return showToast('Only an administrator can create a department.', 'error'); } let name = document.getElementById('newDeptNameInput').value.trim(); if (!name) return showToast('Department name is required.', 'error'); name = name.toUpperCase(); if (_deptModalMode === 'edit' && _deptModalEditTarget) { const oldName = _deptModalEditTarget; if (name === oldName) { closeModal('newDeptModal'); return; } if (state.departments.find(d => d.toUpperCase() === name)) return showToast('Department "' + name + '" already exists.', 'error'); const idx = state.departments.indexOf(oldName); if (idx !== -1) state.departments[idx] = name; state.data.items.forEach(i => { if (i.department === oldName) i.department = name; (i.history || []).forEach(h => { if (h.department === oldName) h.department = name; }); }); state.data.categories.forEach(c => { if (c.dept === oldName) c.dept = name; }); state.data.offices.forEach(o => { if (o.dept === oldName) o.dept = name; }); if (!state.deptPasswords) state.deptPasswords = {}; if (state.deptPasswords[oldName]) { state.deptPasswords[name] = state.deptPasswords[oldName]; delete state.deptPasswords[oldName]; } if (state.activeDept === oldName) state.activeDept = name; if (state.defaultDept === oldName) state.defaultDept = name; saveState(false); renderDeptTabs(); refreshAll(); closeModal('newDeptModal'); showToast('Department renamed to "' + name + '".'); } else { if (state.departments.find(d => d.toUpperCase() === name)) return showToast('Department "' + name + '" already exists.', 'error'); state.departments.push(name); if (!state.deptPasswords) state.deptPasswords = {}; saveState(false); ensureDefaultStores(); renderDeptTabs(); closeModal('newDeptModal'); showToast('Department "' + name + '" added with its own Stores office.'); } });
+            document.getElementById('newDeptSaveBtn').addEventListener('click', () => { if (!isAdminMode) { closeModal('newDeptModal'); return showToast('Only an administrator can create a department.', 'error'); } let name = document.getElementById('newDeptNameInput').value.trim(); if (!name) return showToast('Department name is required.', 'error'); name = name.toUpperCase(); if (_deptModalMode === 'edit' && _deptModalEditTarget) { const oldName = _deptModalEditTarget; if (name === oldName) { closeModal('newDeptModal'); return; } if (state.departments.find(d => d.toUpperCase() === name)) return showToast('Department "' + name + '" already exists.', 'error'); const idx = state.departments.indexOf(oldName); if (idx !== -1) state.departments[idx] = name; state.data.items.forEach(i => { if (i.department === oldName) i.department = name; (i.history || []).forEach(h => { if (h.department === oldName) h.department = name; }); }); state.data.categories.forEach(c => { if (c.dept === oldName) c.dept = name; }); state.data.offices.forEach(o => { if (o.dept === oldName) o.dept = name; }); if (!state.deptPasswords) state.deptPasswords = {}; if (state.deptPasswords[oldName]) { state.deptPasswords[name] = state.deptPasswords[oldName]; delete state.deptPasswords[oldName]; } if (state.activeDept === oldName) state.activeDept = name; if (state.defaultDept === oldName) state.defaultDept = name;
+              // SYNC: also update the shared dit_departments_v1 key so index.html stays in sync
+              try { const sharedRaw = memoryStore.getItem('dit_departments_v1'); const shared = sharedRaw ? JSON.parse(sharedRaw) : []; const si = shared.indexOf(oldName); if (si !== -1) { shared[si] = name; memoryStore.setItem('dit_departments_v1', JSON.stringify(shared)); } } catch(e) {}
+              saveState(false); renderDeptTabs(); refreshAll(); closeModal('newDeptModal'); showToast('Department renamed to "' + name + '".'); } else { if (state.departments.find(d => d.toUpperCase() === name)) return showToast('Department "' + name + '" already exists.', 'error'); state.departments.push(name); if (!state.deptPasswords) state.deptPasswords = {};
+              // SYNC: also add to shared dit_departments_v1
+              try { const sharedRaw = memoryStore.getItem('dit_departments_v1'); const shared = sharedRaw ? JSON.parse(sharedRaw) : []; if (!shared.includes(name)) { shared.push(name); memoryStore.setItem('dit_departments_v1', JSON.stringify(shared)); } } catch(e) {}
+              saveState(false); ensureDefaultStores(); renderDeptTabs(); closeModal('newDeptModal'); showToast('Department "' + name + '" added with its own Stores office.'); } });
             }
             document.getElementById('newOfficeNameInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('newOfficeSaveBtn').click(); });
 

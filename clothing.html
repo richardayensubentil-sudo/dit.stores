@@ -4498,6 +4498,14 @@
       ];
 
       var DEFAULT_CLOTHING_CONFIG = {
+        beret: { name: "Beret", category: "headwear", type: "toggle", sizes: [] },
+        shirt: { name: "Shirt/Jacket", category: "top", type: "size", sizes: ["XS","S","M","L","XL","2XL","3XL"] },
+        trouser: { name: "Trousers", category: "bottom", type: "size", sizes: ["26","28","30","32","34","36","38","40","42","44"] },
+        boot: { name: "Boots/Shoes", category: "footwear", type: "size", sizes: ["37","38","39","40","41","42","43","44","45","46"] },
+        vest: { name: "Vest/T-Shirt", category: "top", type: "size", sizes: ["XS","S","M","L","XL","2XL","3XL"] },
+        sock: { name: "Socks", category: "footwear", type: "size", sizes: ["S","M","L","XL"] },
+        belt: { name: "Belt", category: "accessory", type: "size", sizes: ["26","28","30","32","34","36","38","40","42","44"] },
+        badge: { name: "Badge/Insignia", category: "accessory", type: "toggle", sizes: [] },
       };
 
       var CONFIG_KEY = "military_clothing_config_v3",
@@ -6445,6 +6453,8 @@
           if (s) {
             var config = JSON.parse(s);
             if (typeof config !== "object" || config === null || Array.isArray(config)) throw new Error("Invalid");
+            // If config is completely empty ({}), seed with defaults
+            if (Object.keys(config).length === 0) throw new Error("Empty config — seed defaults");
             Object.keys(config).forEach(function (k) {
               if (!config[k]) return;
               if (!Array.isArray(config[k].sizes)) config[k].sizes = [];
