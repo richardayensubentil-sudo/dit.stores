@@ -1,26 +1,28 @@
 /**
  * api/storage.js — Neon serverless key-value store
  *
- * Architecture for multi-user production use:
- * - Uses @neondatabase/serverless which handles HTTP-based connection pooling
- * - Each request gets a lightweight HTTP connection (no TCP overhead)
- * - The neon() client is reused across warm Lambda invocations
- * - Table creation is cached after first run (_tableReady flag)
- * - Proper error messages for common failure modes
+ * Production hardened:
+ * - Token-based auth via X-Storage-Token request header
+ *   Set STORAGE_TOKEN in Vercel environment variables.
+ *   neon-storage.js sends the same token from NEXT_PUBLIC_STORAGE_TOKEN
+ *   (or falls back to window.__STORAGE_TOKEN injected by a meta tag).
+ * - HTTP-based Neon pooling — reused across warm Lambda invocations
+ * - Table creation cached after first run (_tableReady flag)
+ * - 8 MB per-value hard limit
+ * - Proper error messages for all common failure modes
  */
 const { neon } = require('@neondatabase/serverless');
 
-// ── Boot-time check ───────────────────────────────────────────────────────────
+// ── Boot-time checks ──────────────────────────────────────────────────────────
 if (!process.env.DATABASE_URL) {
   console.error('[storage] FATAL: DATABASE_URL not set in environment');
 }
 
-// ── Connection — reused across warm invocations (serverless pooling) ──────────
+// ── Connection — reused across warm invocations ───────────────────────────────
 let _sql = null;
 function getSql() {
   if (!process.env.DATABASE_URL)
     throw new Error('DATABASE_URL is not configured. Set it in Vercel environment variables.');
-  // Lazy init — reused across warm Lambda calls for connection efficiency
   if (!_sql) _sql = neon(process.env.DATABASE_URL);
   return _sql;
 }
@@ -37,7 +39,6 @@ async function ensureTable() {
       updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
-  // Index for fast ordered bulk reads
   await sql`
     CREATE INDEX IF NOT EXISTS app_storage_updated_idx ON app_storage (updated_at DESC)
   `;
@@ -61,22 +62,34 @@ function getKey(req) {
   return null;
 }
 
+// ── Auth check ────────────────────────────────────────────────────────────────
+function isAuthorized(req) {
+  const token = process.env.STORAGE_TOKEN;
+  if (!token) return true; // no token configured → open (backward-compat)
+  const sent = req.headers['x-storage-token'] || '';
+  return sent === token;
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
-  // CORS — allow all origins for the client-side fetch calls
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Storage-Token');
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method === 'OPTIONS') return res.status(204).end();
+
+  // Auth — skip for OPTIONS (preflight handled above)
+  if (!isAuthorized(req)) {
+    return json(res, 401, { error: 'Unauthorized' });
+  }
 
   // Ensure table exists
   try {
     await ensureTable();
   } catch (err) {
-    _tableReady = false; // retry on next request
-    _sql = null;         // force reconnect on auth/connection errors
+    _tableReady = false;
+    _sql = null;
     console.error('[storage] ensureTable failed:', err.message);
     const msg = err.message || '';
     return json(res, 503, {
@@ -88,7 +101,7 @@ module.exports = async function handler(req, res) {
   const key = getKey(req);
 
   try {
-    // ── GET /api/storage — bulk load all keys (page init) ────────────────────
+    // ── GET /api/storage — bulk load all keys ────────────────────────────────
     if (req.method === 'GET' && key === null) {
       const rows = await sql`
         SELECT storage_key, storage_value
@@ -155,7 +168,7 @@ module.exports = async function handler(req, res) {
       return json(res, 413, { error: 'Value too large for the database column.' });
     }
     if (msg.includes('ECONNREFUSED') || msg.includes('ETIMEDOUT') || msg.includes('connect ETIMEOUT')) {
-      _sql = null; // force reconnect
+      _sql = null;
       return json(res, 503, { error: 'Database connection failed. Please try again in a moment.' });
     }
     if (msg.includes('password authentication') || msg.includes('authentication failed')) {

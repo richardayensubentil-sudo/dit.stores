@@ -2,6 +2,7 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8"/>
+  <meta name="storage-token" content="9rU8XQmIfg6uxCWkHMBa5ALSy217V4ZYtiOEn0lv"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DIT — Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
@@ -691,10 +692,12 @@
         const backup = JSON.parse(text);
         if (!backup.version || !backup.data) { showToast('Invalid backup file','error'); return; }
         const keys = Object.keys(backup.data);
-        showToast('Restoring '+keys.length+' keys...','success');
-        for (let i=0; i<keys.length; i++) { await memoryStore.setItem(keys[i], backup.data[keys[i]]); }
+        showToast('Restoring '+keys.length+' keys — please wait...','success');
+        // Write all keys in parallel (not sequentially) for speed, then wait for ALL to complete
+        // before reloading — prevents the race condition where reload fires before writes finish
+        await Promise.all(keys.map(function(k) { return memoryStore.setItem(k, backup.data[k]); }));
         showToast('Restore complete! Reloading...','success');
-        setTimeout(function(){ location.reload(); },1500);
+        setTimeout(function(){ location.reload(); }, 800);
       } catch(e) { showToast('Restore failed: '+e.message,'error'); }
     }
 

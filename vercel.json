@@ -1,15 +1,22 @@
 {
   "version": 2,
   "functions": {
-    "api/storage.js": {
-      "memory": 256,
-      "maxDuration": 15
-    }
+    "api/storage.js":    { "memory": 256, "maxDuration": 15 },
+    "api/s3-storage.js": { "memory": 256, "maxDuration": 15 }
   },
   "routes": [
+    { "src": "/api/storage(.*)",    "dest": "/api/storage.js" },
+    { "src": "/api/s3-storage(.*)", "dest": "/api/s3-storage.js" }
+  ],
+  "headers": [
     {
-      "src": "/api/storage(.*)",
-      "dest": "/api/storage.js"
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options",  "value": "nosniff" },
+        { "key": "X-Frame-Options",          "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy",           "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy",        "value": "geolocation=(), camera=(), microphone=()" }
+      ]
     }
   ]
 }

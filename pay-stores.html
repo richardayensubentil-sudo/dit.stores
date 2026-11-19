@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="storage-token" content="9rU8XQmIfg6uxCWkHMBa5ALSy217V4ZYtiOEn0lv" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pay Printing Stores</title>
     <script>
@@ -1664,9 +1665,6 @@
           return { registries: memoryStore.registries, nextRegistryNum: memoryStore.nextRegistryNum };
         }
         var storedValue = memoryStore.getItem('payStore.registries');
-        if (!storedValue && window.sqlStorageGet) {
-          try { storedValue = await window.sqlStorageGet('payStore.registries'); } catch (e) {}
-        }
         if (!storedValue) return null;
         try {
           var parsed = JSON.parse(storedValue);
@@ -1692,9 +1690,6 @@
         if (memoryStore.tables[tableId]) return memoryStore.tables[tableId];
         var key = 'payStore.table.' + tableId;
         var storedValue = memoryStore.getItem(key);
-        if (!storedValue && window.sqlStorageGet) {
-          try { storedValue = await window.sqlStorageGet(key); } catch (e) {}
-        }
         if (!storedValue) return null;
         try {
           var parsed = JSON.parse(storedValue);
@@ -1713,7 +1708,6 @@
       function dbDeleteTable(tableId) {
         delete memoryStore.tables[tableId];
         memoryStore.removeItem('payStore.table.' + tableId);
-        if (window.sqlStorageDelete) window.sqlStorageDelete('payStore.table.' + tableId);
       }
 
       function dbLoadCurrentUser() {

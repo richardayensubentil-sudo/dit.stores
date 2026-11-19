@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="storage-token" content="9rU8XQmIfg6uxCWkHMBa5ALSy217V4ZYtiOEn0lv">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory &amp; Loan System</title>
     <script>
@@ -933,6 +934,32 @@
 
         .tab-btn-label {
             cursor: pointer;
+            flex: 1;
+        }
+
+        .tab-btn-menu-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border: none;
+            border-radius: 5px;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 0;
+            opacity: 0;
+            transition: opacity .15s, background .15s;
+            flex-shrink: 0;
+        }
+        .tab-btn:hover .tab-btn-menu-btn,
+        .tab-btn.active .tab-btn-menu-btn {
+            opacity: 1;
+        }
+        .tab-btn-menu-btn:hover {
+            background: rgba(0,0,0,.1);
+            color: var(--text-main);
         }
 
         .tab-btn:hover {
@@ -11599,8 +11626,8 @@ body::after {
                   user: (currentUser || 'Unknown').slice(0, 50),
                   date: new Date().toISOString()
                 });
-                // Keep only last 200 entries (not 1000) to prevent DB bloat
-                memoryStore.setItem('dit_activity_log_v1', JSON.stringify(activities.slice(-200)));
+                // Keep only last 500 entries — consistent with other modules, prevents DB bloat
+                memoryStore.setItem('dit_activity_log_v1', JSON.stringify(activities.slice(-500)));
               } catch (e) {}
             }
             function inventoryChanges(before, after, label) {
@@ -11634,16 +11661,16 @@ body::after {
               sortOffices();
               const doSave = function() {
                 try {
-                  // Before saving, sync departments from the shared key (index.html may have renamed/deleted)
-                  // This prevents a stale in-memory state from overwriting renames done in index.html
+                  // Sync departments: merge state depts with shared key so neither side loses data.
+                  // Both loadState and saveState now use the same union logic → no silent data loss.
                   var sharedDepts = getSharedDepartments();
                   if (sharedDepts && sharedDepts.length > 0) {
-                    // Merge: keep any dept that exists in shared, plus any new ones in state
-                    var sharedSet = new Set(sharedDepts.map(function(d){ return d.toUpperCase(); }));
-                    var stateDepts = (state.departments || []);
-                    // Replace state departments with the authoritative shared list
-                    // but preserve any that are in state but were newly added this session
-                    state.departments = sharedDepts;
+                    // Union: keep everything in state.departments PLUS everything in the shared list.
+                    // This means depts added in this session survive even if the shared key lags behind.
+                    var merged = Array.from(new Set((state.departments || []).concat(sharedDepts)));
+                    state.departments = merged;
+                    // Write the merged list back to the shared key to keep index.html in sync.
+                    try { memoryStore.setItem('dit_departments_v1', JSON.stringify(merged)); } catch(e) {}
                   }
                   const payload = JSON.stringify(state);
                   memoryStore.setItem(STORAGE_KEY, payload);
@@ -11722,7 +11749,7 @@ body::after {
                 });
 
                 colToggleMenu.addEventListener('click', (e) => { e.stopPropagation(); const delBtn = e.target.closest('[data-del-col-key]'); if (delBtn) { deleteCustomColumn(delBtn.dataset.delColKey); return; } const editBtn = e.target.closest('[data-edit-col-key]'); if (editBtn) { e.preventDefault(); startEditColumnLabel(editBtn.dataset.editColKey); return; } if (e.target.matches('input[data-col-key]')) { const key = e.target.dataset.colKey; colVisibility[key] = e.target.checked; saveColVisByScope(); applyColVisibility(); } });
-                document.addEventListener('click', () => { colToggleMenu.classList.remove('show'); document.getElementById('catActionMenu').classList.remove('show'); document.getElementById('officeActionMenu').classList.remove('show'); document.getElementById('deptActionMenu').classList.remove('show'); document.getElementById('exportDropdownMenu').classList.remove('show'); });
+                document.addEventListener('click', () => { colToggleMenu.classList.remove('show'); document.getElementById('catActionMenu').classList.remove('show'); document.getElementById('officeActionMenu').classList.remove('show'); const dm = document.getElementById('deptActionMenu'); if (dm) dm.style.display = 'none'; document.getElementById('exportDropdownMenu').classList.remove('show'); });
 
                 const searchModal = document.getElementById('searchModal');
                 const searchModalInput = document.getElementById('searchModalInput');
@@ -12383,10 +12410,15 @@ body::after {
                 wrap.innerHTML = visibleDepartments.map(function (d, idx) {
                     const color = DEPT_COLORS[idx % DEPT_COLORS.length];
                     const active = d === state.activeDept ? ' active' : '';
-                    return '<div class="tab-btn' + active + '" data-dept="' + escAttr(d) + '" style="--dept-color:' + color + '"><span class="tab-btn-label">' + escHtml(d) + '</span></div>';
+                    // Admin gets a ⋮ menu button on each tab for rename/delete
+                    const menuBtn = isAdminMode
+                        ? '<button class="tab-btn-menu-btn" onclick="event.stopPropagation();showDeptMenu(event,\'' + escAttr(d) + '\')" title="Department options"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>'
+                        : '';
+                    return '<div class="tab-btn' + active + '" data-dept="' + escAttr(d) + '" style="--dept-color:' + color + '"><span class="tab-btn-label">' + escHtml(d) + '</span>' + menuBtn + '</div>';
                 }).join('');
                 wrap.querySelectorAll('.tab-btn').forEach(function (btn) {
                     btn.addEventListener('click', function (e) {
+                        if (e.target.closest('.tab-btn-menu-btn')) return;
                         const targetDept = btn.dataset.dept;
                         selectDeptTab(targetDept);
                     });
@@ -12403,6 +12435,68 @@ body::after {
                 _selectedItemIds.clear();
                 updateSelectAllCheckbox();
                 refreshAll();
+            }
+
+            // ── Department tab ⋮ menu ─────────────────────────────────────────────────
+            function showDeptMenu(e, deptName) {
+                e.stopPropagation();
+                activeDeptTarget = deptName;
+                const menu = document.getElementById('deptActionMenu');
+                menu.style.cssText = 'display:block;position:fixed;z-index:9000;background:var(--bg-card);border:1px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:6px;min-width:160px;';
+                menu.innerHTML = '<button type="button" id="deptRenameMenuBtn" style="display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border:none;border-radius:6px;background:none;cursor:pointer;font:inherit;font-size:.85rem;color:var(--text-main)">'
+                    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Rename</button>'
+                    + '<div style="height:1px;background:var(--border-color);margin:4px 0"></div>'
+                    + '<button type="button" id="deptDeleteMenuBtn" style="display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border:none;border-radius:6px;background:none;cursor:pointer;font:inherit;font-size:.85rem;color:var(--danger)">'
+                    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete Department</button>';
+                const rect = e.target.getBoundingClientRect();
+                menu.style.top = (rect.bottom + 4) + 'px';
+                menu.style.left = Math.min(rect.left, window.innerWidth - 180) + 'px';
+                // Wire buttons each time menu opens
+                document.getElementById('deptRenameMenuBtn').onclick = function(ev) {
+                    ev.stopPropagation();
+                    menu.style.display = 'none';
+                    _deptModalMode = 'edit';
+                    _deptModalEditTarget = activeDeptTarget;
+                    document.getElementById('newDeptModalTitleText').textContent = 'Rename Department';
+                    document.getElementById('newDeptNameInput').value = activeDeptTarget;
+                    openModal('newDeptModal');
+                    setTimeout(function() { const inp = document.getElementById('newDeptNameInput'); inp.focus(); inp.select(); }, 200);
+                };
+                document.getElementById('deptDeleteMenuBtn').onclick = function(ev) {
+                    ev.stopPropagation();
+                    menu.style.display = 'none';
+                    deleteCurrentDept(activeDeptTarget);
+                };
+            }
+
+            function deleteCurrentDept(deptName) {
+                if (!isAdminMode) return showToast('Only an administrator can delete a department.', 'error');
+                if (state.departments.length <= 1) return showToast('Cannot delete the last department.', 'error');
+                const itemCount = state.data.items.filter(i => i.department === deptName).length;
+                const msg = itemCount > 0
+                    ? 'Delete department "' + deptName + '" and its ' + itemCount + ' item(s)?\n\nThis action cannot be undone.'
+                    : 'Delete department "' + deptName + '"? This action cannot be undone.';
+                confirmUser(msg, function() {
+                    // Remove all data for this dept
+                    state.data.items       = state.data.items.filter(i => i.department !== deptName);
+                    state.data.offices     = state.data.offices.filter(o => o.dept !== deptName);
+                    state.data.categories  = state.data.categories.filter(c => c.dept !== deptName);
+                    state.departments      = state.departments.filter(d => d !== deptName);
+                    if (state.deptPasswords) delete state.deptPasswords[deptName];
+                    if (state.defaultDept === deptName) state.defaultDept = state.departments[0];
+                    if (state.activeDept  === deptName) state.activeDept  = state.departments[0];
+                    // Also remove from shared departments key so index.html stays in sync
+                    try {
+                        const sharedRaw = memoryStore.getItem('dit_departments_v1');
+                        const shared = sharedRaw ? JSON.parse(sharedRaw) : [];
+                        const updated = shared.filter(d => d !== deptName);
+                        memoryStore.setItem('dit_departments_v1', JSON.stringify(updated));
+                    } catch(e) {}
+                    saveState(true);
+                    renderDeptTabs();
+                    refreshAll();
+                    showToast('Department "' + deptName + '" permanently deleted.');
+                });
             }
 
             function populateDeptSelects() {
@@ -12441,11 +12535,11 @@ body::after {
             window.showCategoryItemHistory = function (btn, categoryName, itemName) { const items = state.data.items.filter(i => i.category === categoryName && i.name === itemName); if (items.length === 0) { showToast('No items found.', 'error'); return; } const ct = document.getElementById('detailContent'); let allHistory = []; items.forEach(item => { const dept = item.department || 'Unknown'; (item.history || []).forEach(h => { allHistory.push({ date: h.date, type: h.type, rcvdFrom: h.rcvdFrom, rcvdBy: h.rcvdBy, qty: h.qty, note: h.note, department: h.department || dept, itemId: item.id, itemDept: dept, itemOffice: item.office || '' }); }); }); allHistory.sort((a, b) => (b.date || '').localeCompare(a.date || '')); const depts = [...new Set(items.map(i => i.department))]; const deptInfo = depts.length > 1 ? '<span style="margin-left:10px;font-size:.78rem;color:var(--warning);font-weight:600">Cross-department item (' + depts.join(', ') + ')</span>' : ''; let html = '<div style="margin-bottom:12px;font-size:.9rem;color:var(--text-muted)">Category: <strong style="color:var(--primary-dark)">' + escHtml(categoryName) + '</strong> — Item: <strong style="color:var(--text-main)">' + escHtml(itemName) + '</strong>' + deptInfo + '</div>'; if (allHistory.length === 0) { html += '<div style="text-align:center;padding:30px;color:var(--text-dim)">No history records found.</div>'; } else { html += '<div style="margin-bottom:8px;font-size:.78rem;color:var(--text-dim)">Showing <b>' + allHistory.length + '</b> history entries</div>'; html += '<table style="width:100%;border-collapse:collapse;font-size:.85rem"><thead><tr><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">#</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Date</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Dept</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Type</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">From</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">To</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Qty</th><th style="background:#f8fafc;padding:8px;border:1px solid var(--border-color)">Note</th></tr></thead><tbody>'; allHistory.forEach((h, i) => { const typeLabel = h.type === 'transfer' ? '<span style="color:var(--warning);font-weight:700">Transfer</span>' : (h.type === 'received' ? '<span style="color:var(--success);font-weight:700">Received</span>' : '<span style="color:var(--text-muted)">' + escHtml(capitalizeWords(h.type)) + '</span>'); const deptBadge = '<span class="history-dept-badge">' + escHtml(h.department || '-') + '</span>'; html += '<tr><td style="padding:8px;border:1px solid var(--border-color);text-align:center;font-weight:600">' + (i + 1) + '</td><td style="padding:8px;border:1px solid var(--border-color);font-family:\'JetBrains Mono\',monospace;font-weight:600;color:var(--primary-dark)">' + formatDateDisplay(h.date) + '</td><td style="padding:8px;border:1px solid var(--border-color);text-align:center">' + deptBadge + '</td><td style="padding:8px;border:1px solid var(--border-color);text-align:center">' + typeLabel + '</td><td style="padding:8px;border:1px solid var(--border-color)">' + escHtml(h.rcvdFrom || '-') + '</td><td style="padding:8px;border:1px solid var(--border-color)">' + escHtml(h.rcvdBy || '-') + '</td><td style="padding:8px;border:1px solid var(--border-color);text-align:center;font-weight:700">' + (h.qty || '-') + '</td><td style="padding:8px;border:1px solid var(--border-color);font-size:.8rem;color:var(--text-dim)">' + escHtml(h.note || '-') + '</td></tr>'; }); html += '</tbody></table>'; } ct.innerHTML = html; document.getElementById('detailTitle').textContent = 'Item History: ' + itemName; openModal('detailModal'); };
 
             document.getElementById('newCatBtn').addEventListener('click', () => { _catModalMode = 'add'; _catModalEditTarget = null; document.getElementById('newCatModalTitleText').textContent = 'Add New Category'; document.getElementById('newCatNameInput').value = ''; openModal('newCatModal'); setTimeout(() => document.getElementById('newCatNameInput').focus(), 200); });
-            document.getElementById('newCatSaveBtn').addEventListener('click', () => { let name = document.getElementById('newCatNameInput').value.trim(); if (!name) return showToast('Category name is required.', 'error'); name = capitalizeWords(name); if (_catModalMode === 'edit' && _catModalEditTarget) { const oldName = _catModalEditTarget; if (name.toLowerCase() === oldName.toLowerCase()) { closeModal('newCatModal'); return; } if (state.data.categories.find(c => c.name.toLowerCase() === name.toLowerCase() && c.dept === state.activeDept)) return showToast('Category "' + name + '" already exists.', 'error'); const cat = state.data.categories.find(c => c.name === oldName); if (cat) { cat.name = name; state.data.items.forEach(i => { if (i.category === oldName) i.category = name; }); saveState(false); refreshAll(); closeModal('newCatModal'); showToast('Category renamed to "' + name + '".'); } } else { if (state.data.categories.find(c => c.name.toLowerCase() === name.toLowerCase() && c.dept === state.activeDept)) return showToast('Category "' + name + '" already exists.', 'error'); state.data.categories.push({ name, id: 'cat_' + Date.now(), dept: state.activeDept }); saveState(false); refreshAll(); closeModal('newCatModal'); showToast('Category "' + name + '" added.'); } });
+            document.getElementById('newCatSaveBtn').addEventListener('click', () => { let name = document.getElementById('newCatNameInput').value.trim(); if (!name) return showToast('Category name is required.', 'error'); name = capitalizeWords(name); if (_catModalMode === 'edit' && _catModalEditTarget) { const oldName = _catModalEditTarget; if (name.toLowerCase() === oldName.toLowerCase()) { closeModal('newCatModal'); return; } if (state.data.categories.find(c => c.name.toLowerCase() === name.toLowerCase() && c.dept === state.activeDept)) return showToast('Category "' + name + '" already exists.', 'error'); const cat = state.data.categories.find(c => c.name === oldName && c.dept === state.activeDept); if (cat) { cat.name = name; state.data.items.forEach(i => { if (i.category === oldName && i.department === state.activeDept) i.category = name; }); saveState(false); refreshAll(); closeModal('newCatModal'); showToast('Category renamed to "' + name + '".'); } else { showToast('Category not found in current department.', 'error'); } } else { if (state.data.categories.find(c => c.name.toLowerCase() === name.toLowerCase() && c.dept === state.activeDept)) return showToast('Category "' + name + '" already exists.', 'error'); state.data.categories.push({ name, id: 'cat_' + Date.now(), dept: state.activeDept }); saveState(false); refreshAll(); closeModal('newCatModal'); showToast('Category "' + name + '" added.'); } });
             document.getElementById('newCatNameInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('newCatSaveBtn').click(); });
 
             document.getElementById('newOfficeBtn').addEventListener('click', () => { _officeModalMode = 'add'; _officeModalEditTarget = null; document.getElementById('newOfficeModalTitleText').textContent = 'Add New Office'; document.getElementById('newOfficeNameInput').value = ''; openModal('newOfficeModal'); setTimeout(() => document.getElementById('newOfficeNameInput').focus(), 200); });
-            document.getElementById('newOfficeSaveBtn').addEventListener('click', () => { let name = document.getElementById('newOfficeNameInput').value.trim(); if (!name) return showToast('Office name is required.', 'error'); name = capitalizeWords(name); if (_officeModalMode === 'edit' && _officeModalEditTarget) { const oldName = _officeModalEditTarget; if (name.toLowerCase() === oldName.toLowerCase()) { closeModal('newOfficeModal'); return; } if (state.data.offices.find(o => o.name.toLowerCase() === name.toLowerCase() && o.dept === state.activeDept)) return showToast('Office "' + name + '" already exists.', 'error'); const off = state.data.offices.find(o => o.name === oldName); if (off) { off.name = name; state.data.items.forEach(i => { if (i.office === oldName) i.office = name; }); migrateColScopeForOfficeRename(off.dept || state.activeDept, oldName, name); if (state.activeOffice === oldName) state.activeOffice = name; saveState(false); refreshAll(); closeModal('newOfficeModal'); showToast('Office renamed to "' + name + '".'); } } else { if (state.data.offices.find(o => o.name.toLowerCase() === name.toLowerCase() && o.dept === state.activeDept)) return showToast('Office "' + name + '" already exists.', 'error'); state.data.offices.push({ name, dept: state.activeDept, isDefault: false }); saveState(false); refreshAll(); closeModal('newOfficeModal'); showToast('Office "' + name + '" added.'); } });
+            document.getElementById('newOfficeSaveBtn').addEventListener('click', () => { let name = document.getElementById('newOfficeNameInput').value.trim(); if (!name) return showToast('Office name is required.', 'error'); name = capitalizeWords(name); if (_officeModalMode === 'edit' && _officeModalEditTarget) { const oldName = _officeModalEditTarget; if (name.toLowerCase() === oldName.toLowerCase()) { closeModal('newOfficeModal'); return; } if (state.data.offices.find(o => o.name.toLowerCase() === name.toLowerCase() && o.dept === state.activeDept)) return showToast('Office "' + name + '" already exists.', 'error'); const off = state.data.offices.find(o => o.name === oldName && o.dept === state.activeDept); if (off) { off.name = name; state.data.items.forEach(i => { if (i.office === oldName && i.department === state.activeDept) i.office = name; }); migrateColScopeForOfficeRename(state.activeDept, oldName, name); if (state.activeOffice === oldName) state.activeOffice = name; saveState(false); refreshAll(); closeModal('newOfficeModal'); showToast('Office renamed to "' + name + '".'); } else { showToast('Office not found in current department.', 'error'); } } else { if (state.data.offices.find(o => o.name.toLowerCase() === name.toLowerCase() && o.dept === state.activeDept)) return showToast('Office "' + name + '" already exists.', 'error'); state.data.offices.push({ name, dept: state.activeDept, isDefault: false }); saveState(false); refreshAll(); closeModal('newOfficeModal'); showToast('Office "' + name + '" added.'); } });
 
             if (document.getElementById('newDeptBtn') && document.getElementById('newDeptSaveBtn')) {
             document.getElementById('newDeptBtn').addEventListener('click', () => { if (!isAdminMode) return showToast('Only an administrator can create a department.', 'error'); _deptModalMode = 'add'; _deptModalEditTarget = null; document.getElementById('newDeptModalTitleText').textContent = 'Add New Department'; document.getElementById('newDeptNameInput').value = ''; openModal('newDeptModal'); setTimeout(() => document.getElementById('newDeptNameInput').focus(), 200); });

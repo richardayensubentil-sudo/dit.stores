@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="storage-token" content="9rU8XQmIfg6uxCWkHMBa5ALSy217V4ZYtiOEn0lv" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Clothing Inventory System</title>
     <script src="neon-storage.js"></script>
@@ -3426,7 +3427,6 @@
                 <a href="reports.html" class="nav-dropdown-item">Reports</a>
                 <a href="index.html?admin=1" onclick="sessionStorage.setItem('adminReturnUrl', window.location.href)" class="nav-dropdown-item" id="adminPanelNavItem" style="display: none">Admin Panel</a>
                 <div class="nav-dropdown-divider"></div>
-                <div class="nav-dropdown-divider"></div>
                 <button type="button" class="nav-dropdown-item logout" onclick="logoutUser()">Logout</button>
               </div>
             </div>
@@ -4560,7 +4560,7 @@
             user: currentLoggedInUser || "Unknown user",
             date: new Date().toISOString(),
           });
-          memoryStore.setItem(ACTIVITY_LOG_KEY, JSON.stringify(activities.slice(-1000)));
+          memoryStore.setItem(ACTIVITY_LOG_KEY, JSON.stringify(activities.slice(-500)));
         } catch (e) {}
       }
 
@@ -6566,6 +6566,17 @@
         if (migrated) saveData();
       }
       function saveData() {
+        // Guard: never overwrite Neon with an empty array.
+        // If we have no data AND Neon has records (cache non-empty), something went wrong — abort.
+        if ((!personnelData || personnelData.length === 0) &&
+            memoryStore.getItem(DB_KEY) !== null) {
+          var existing = null;
+          try { existing = JSON.parse(memoryStore.getItem(DB_KEY)); } catch(e) {}
+          if (existing && Array.isArray(existing.records) && existing.records.length > 0) {
+            console.warn('[clothing] saveData() blocked — would overwrite', existing.records.length, 'records with empty array');
+            return;
+          }
+        }
         syncIssueRecordsFromPersonnel();
         var payload = JSON.stringify({
           records: personnelData,

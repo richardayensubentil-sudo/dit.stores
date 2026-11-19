@@ -9,10 +9,26 @@
 
   function getMessages() {
     try {
-      const messages = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      // Use neonStorage if available (persists across devices), fall back to localStorage
+      var store = window.neonStorage || localStorage;
+      var raw = typeof store.getItem === 'function' ? store.getItem(STORAGE_KEY) : null;
+      const messages = JSON.parse(raw || "[]");
       return Array.isArray(messages) ? messages : [];
     } catch (error) {
       return [];
+    }
+  }
+
+  function saveMessages(messages) {
+    var json = JSON.stringify(messages.slice(-500)); // cap at 500 messages
+    try {
+      if (window.neonStorage) {
+        window.neonStorage.setItem(STORAGE_KEY, json);
+      } else {
+        localStorage.setItem(STORAGE_KEY, json);
+      }
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -219,9 +235,6 @@
     button.addEventListener("click", () => {
       renderMessages();
       modal.overlay.classList.add("is-open");
-    });
-    window.addEventListener("storage", (event) => {
-      if (event.key === STORAGE_KEY) renderMessages();
     });
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") modal.close();
