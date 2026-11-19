@@ -1196,9 +1196,9 @@
       }
       .print-bar {
         display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        padding: 12px 18px;
+        flex-wrap: nowrap;
+        gap: 0;
+        padding: 10px 18px;
         background: var(--bg-card);
         border: 1px solid var(--border-color);
         border-radius: 12px;
@@ -1221,15 +1221,24 @@
       }
       .print-selector-container {
         flex: 1;
-        min-width: 0;      /* prevents flex blowout */
-        max-width: calc(100% - 220px); /* always leave room for Save + Nominal Roll */
+        min-width: 0;
         display: flex;
         align-items: center;
         gap: 8px;
         overflow-x: auto;
-        padding-bottom: 2px;
+        padding: 0 12px;
         scrollbar-width: none;
         -ms-overflow-style: none;
+      }
+      .print-selector-container::-webkit-scrollbar { display: none; }
+
+      /* Right-side buttons group — always pinned to far right */
+      .print-bar-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+        margin-left: auto;
       }
       .print-selector-container::-webkit-scrollbar {
         display: none;
@@ -1307,12 +1316,12 @@
         white-space: nowrap;
       }
       #saveFormBtn {
-        opacity: 0;
-        pointer-events: none;
+        opacity: 1;
+        pointer-events: auto;
         transition:
           opacity 0.3s ease,
           transform 0.3s ease;
-        transform: translateY(4px);
+        transform: translateY(0);
       }
       #saveFormBtn.visible {
         opacity: 1;
@@ -3485,6 +3494,7 @@
           Select Items
         </div>
         <div class="print-selector-container" id="printSelectorContainer"></div>
+        <div class="print-bar-actions">
         <button
           class="btn btn-secondary print-action-btn"
           id="saveFormBtn"
@@ -3517,7 +3527,7 @@
               <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
               <rect x="6" y="14" width="12" height="8"></rect>
             </svg>
-            <span id="printBtnText">Print</span>
+            <span id="printBtnText">Nominal Roll</span>
           </button>
           <button
             class="split-btn-arrow"
@@ -3648,6 +3658,7 @@
             </button>
           </div>
         </div>
+        </div><!-- end print-bar-actions -->
       </section>
       <section class="controls-bar no-print">
         <div class="search-wrapper">
