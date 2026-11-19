@@ -1196,31 +1196,36 @@
       }
       .print-bar {
         display: flex;
+        flex-direction: row;
         flex-wrap: nowrap;
+        align-items: center;
         gap: 0;
-        padding: 10px 18px;
-        background: var(--bg-card);
+        padding: 10px 20px;
+        background: #ffffff;
         border: 1px solid var(--border-color);
         border-radius: 12px;
         margin-bottom: 16px;
-        align-items: center;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        min-height: 56px;
+        position: relative;
+        z-index: 2;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
       }
       .print-bar .label {
-        font-weight: 700;
-        font-size: 0.7rem;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        color: var(--text-muted);
         display: flex;
         align-items: center;
         gap: 8px;
-        padding-right: 16px;
-        border-right: 1px solid var(--border-color);
+        font-weight: 700;
+        font-size: 0.72rem;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: var(--text-muted);
         white-space: nowrap;
+        flex-shrink: 0;
+        padding-right: 18px;
+        border-right: 1px solid var(--border-color);
       }
       .print-selector-container {
-        flex: 1;
+        flex: 1 1 auto;
         min-width: 0;
         display: flex;
         align-items: center;
@@ -1232,16 +1237,15 @@
       }
       .print-selector-container::-webkit-scrollbar { display: none; }
 
-      /* Right-side buttons group — always pinned to far right */
+      /* Right-side action buttons — always pinned far right */
       .print-bar-actions {
         display: flex;
+        flex-direction: row;
         align-items: center;
         gap: 8px;
         flex-shrink: 0;
         margin-left: auto;
-      }
-      .print-selector-container::-webkit-scrollbar {
-        display: none;
+        padding-left: 12px;
       }
       .print-btn-item {
         padding: 6px 12px;
@@ -1346,10 +1350,18 @@
       }
       .controls-bar {
         display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .controls-row {
+        display: flex;
         flex-wrap: nowrap;
         gap: 8px;
-        margin-bottom: 16px;
         align-items: center;
+      }
+      .controls-row-filters {
+        flex-wrap: wrap;
       }
       .search-wrapper {
         position: relative;
@@ -3247,6 +3259,9 @@
         .controls-bar {
           gap: 8px;
         }
+        .controls-row {
+          flex-wrap: wrap;
+        }
         .search-wrapper {
           min-width: 100%;
         }
@@ -3282,7 +3297,7 @@
         }
       }
       @media (max-width: 1200px) {
-        .controls-bar {
+        .controls-row {
           gap: 6px;
           flex-wrap: wrap;
         }
@@ -3661,72 +3676,75 @@
         </div><!-- end print-bar-actions -->
       </section>
       <section class="controls-bar no-print">
-        <div class="search-wrapper">
-          <input type="text" id="searchInput" class="search-bar" placeholder="Search by Name, Svc No, or User ID..." />
-          <button type="button" id="clearSearchBtn" class="clear-search-btn" aria-label="Clear search">&times;</button>
+        <div class="controls-row controls-row-filters">
+          <div class="search-wrapper">
+            <input type="text" id="searchInput" class="search-bar" placeholder="Search by Name, Svc No, or User ID..." />
+            <button type="button" id="clearSearchBtn" class="clear-search-btn" aria-label="Clear search">&times;</button>
+          </div>
+          <div class="filter-wrapper">
+            <select id="rankFilter" class="filter-select filter-select-narrow"></select>
+            <button type="button" class="filter-clear-btn" id="clearRankFilter" aria-label="Clear rank filter">&times;</button>
+          </div>
+          <div class="filter-wrapper">
+            <select id="unitFilter" class="filter-select filter-select-narrow">
+              <option value="">All Units</option>
+              <option value="ARMY">ARMY</option>
+              <option value="NAVY">NAVY</option>
+              <option value="AIR FORCE">AIR FORCE</option>
+            </select>
+            <button type="button" class="filter-clear-btn" id="clearUnitFilter" aria-label="Clear unit filter">&times;</button>
+          </div>
+          <div class="filter-wrapper">
+            <select id="clocFilter" class="filter-select filter-select-narrow">
+              <option value="">All C/LOC</option>
+            </select>
+            <button type="button" class="filter-clear-btn" id="clearClocFilter" aria-label="Clear location filter">
+              &times;
+            </button>
+          </div>
+          <div class="filter-wrapper">
+            <select id="deptFilter" class="filter-select filter-select-narrow">
+              <option value="">All Dept.</option>
+            </select>
+            <button type="button" class="filter-clear-btn" id="clearDeptFilter" aria-label="Clear department filter">
+              &times;
+            </button>
+          </div>
+          <div class="filter-wrapper">
+            <select id="sexFilter" class="filter-select filter-select-narrow">
+              <option value="">All Sex</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+            <button type="button" class="filter-clear-btn" id="clearSexFilter" aria-label="Clear sex filter">
+              &times;
+            </button>
+          </div>
+          <div class="size-filter-badge" id="sizeFilterBadge" onclick="clearSizeFilter()"></div>
+          <div style="flex: 1"></div>
+          <div class="split-btn-wrapper split-btn-warning" id="clearIssuedWrapper">
+            <button class="split-btn-main" onclick="handleClearAllIssued()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+              </svg>
+              Clear
+            </button>
+            <button
+              class="split-btn-arrow"
+              id="clearIssuedArrow"
+              onclick="toggleClearIssuedDropdown(event)"
+              aria-label="Select items to clear"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="split-btn-menu" id="clearIssuedMenu"></div>
+          </div>
         </div>
-        <div class="filter-wrapper">
-          <select id="rankFilter" class="filter-select filter-select-narrow"></select>
-          <button type="button" class="filter-clear-btn" id="clearRankFilter" aria-label="Clear rank filter">&times;</button>
-        </div>
-        <div class="filter-wrapper">
-          <select id="unitFilter" class="filter-select filter-select-narrow">
-            <option value="">All Units</option>
-            <option value="ARMY">ARMY</option>
-            <option value="NAVY">NAVY</option>
-            <option value="AIR FORCE">AIR FORCE</option>
-          </select>
-          <button type="button" class="filter-clear-btn" id="clearUnitFilter" aria-label="Clear unit filter">&times;</button>
-        </div>
-        <div class="filter-wrapper">
-          <select id="clocFilter" class="filter-select filter-select-narrow">
-            <option value="">All C/LOC</option>
-          </select>
-          <button type="button" class="filter-clear-btn" id="clearClocFilter" aria-label="Clear location filter">
-            &times;
-          </button>
-        </div>
-        <div class="filter-wrapper">
-          <select id="deptFilter" class="filter-select filter-select-narrow">
-            <option value="">All Dept.</option>
-          </select>
-          <button type="button" class="filter-clear-btn" id="clearDeptFilter" aria-label="Clear department filter">
-            &times;
-          </button>
-        </div>
-        <div class="filter-wrapper">
-          <select id="sexFilter" class="filter-select filter-select-narrow">
-            <option value="">All Sex</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-          <button type="button" class="filter-clear-btn" id="clearSexFilter" aria-label="Clear sex filter">
-            &times;
-          </button>
-        </div>
-        <div class="size-filter-badge" id="sizeFilterBadge" onclick="clearSizeFilter()"></div>
-        <div style="flex: 1"></div>
-        <div class="split-btn-wrapper split-btn-warning" id="clearIssuedWrapper">
-          <button class="split-btn-main" onclick="handleClearAllIssued()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
-            </svg>
-            Clear
-          </button>
-          <button
-            class="split-btn-arrow"
-            id="clearIssuedArrow"
-            onclick="toggleClearIssuedDropdown(event)"
-            aria-label="Select items to clear"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-          <div class="split-btn-menu" id="clearIssuedMenu"></div>
-        </div>
-        <div class="split-btn-wrapper split-btn-accent" id="exportDropdownWrapper">
+        <div class="controls-row controls-row-actions">
+          <div class="split-btn-wrapper split-btn-accent" id="exportDropdownWrapper">
           <button class="split-btn-main" onclick="handleExportExcel()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -3923,6 +3941,7 @@
             </button>
           </div>
         </div>
+        </div><!-- end controls-row-actions -->
       </section>
       <div class="location-table-header" id="locationTableHeader">
         <div class="location-header-main">
