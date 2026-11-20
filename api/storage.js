@@ -1,21 +1,15 @@
 /**
  * api/storage.js — Neon serverless key-value store
  *
- * Production hardened:
- * - Token-based auth via X-Storage-Token request header
- *   Set STORAGE_TOKEN in Vercel environment variables.
- *   neon-storage.js sends the same token from NEXT_PUBLIC_STORAGE_TOKEN
- *   (or falls back to window.__STORAGE_TOKEN injected by a meta tag).
- * - HTTP-based Neon pooling — reused across warm Lambda invocations
- * - Table creation cached after first run (_tableReady flag)
+ * - HTTP-based Neon pooling (no TCP overhead, reused across warm Lambdas)
+ * - Table + index created on first cold start, cached with _tableReady flag
  * - 8 MB per-value hard limit
- * - Proper error messages for all common failure modes
+ * - Auto-reconnect on auth/connection errors
  */
 const { neon } = require('@neondatabase/serverless');
 
-// ── Boot-time checks ──────────────────────────────────────────────────────────
 if (!process.env.DATABASE_URL) {
-  console.error('[storage] FATAL: DATABASE_URL not set in environment');
+  console.error('[storage] FATAL: DATABASE_URL not set');
 }
 
 // ── Connection — reused across warm invocations ───────────────────────────────
@@ -27,7 +21,7 @@ function getSql() {
   return _sql;
 }
 
-// ── Table bootstrap — runs once per cold start ────────────────────────────────
+// ── Table bootstrap — once per cold start ────────────────────────────────────
 let _tableReady = false;
 async function ensureTable() {
   if (_tableReady) return;
@@ -40,12 +34,13 @@ async function ensureTable() {
     )
   `;
   await sql`
-    CREATE INDEX IF NOT EXISTS app_storage_updated_idx ON app_storage (updated_at DESC)
+    CREATE INDEX IF NOT EXISTS app_storage_updated_idx
+      ON app_storage (updated_at DESC)
   `;
   _tableReady = true;
 }
 
-// ── Response helpers ──────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function json(res, status, body) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 'no-store');
@@ -62,29 +57,15 @@ function getKey(req) {
   return null;
 }
 
-// ── Auth check ────────────────────────────────────────────────────────────────
-function isAuthorized(req) {
-  const token = process.env.STORAGE_TOKEN;
-  if (!token) return true; // no token configured → open (backward-compat)
-  const sent = req.headers['x-storage-token'] || '';
-  return sent === token;
-}
-
-// ── Main handler ──────────────────────────────────────────────────────────────
+// ── Handler ───────────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Storage-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method === 'OPTIONS') return res.status(204).end();
 
-  // Auth — skip for OPTIONS (preflight handled above)
-  if (!isAuthorized(req)) {
-    return json(res, 401, { error: 'Unauthorized' });
-  }
-
-  // Ensure table exists
   try {
     await ensureTable();
   } catch (err) {
@@ -93,7 +74,9 @@ module.exports = async function handler(req, res) {
     console.error('[storage] ensureTable failed:', err.message);
     const msg = err.message || '';
     return json(res, 503, {
-      error: msg.includes('DATABASE_URL') ? msg : 'Database unavailable: ' + msg.slice(0, 150)
+      error: msg.includes('DATABASE_URL')
+        ? msg
+        : 'Database unavailable: ' + msg.slice(0, 150)
     });
   }
 
@@ -101,11 +84,11 @@ module.exports = async function handler(req, res) {
   const key = getKey(req);
 
   try {
-    // ── GET /api/storage — bulk load all keys ────────────────────────────────
+    // GET /api/storage — bulk load all keys (page init)
     if (req.method === 'GET' && key === null) {
       const rows = await sql`
         SELECT storage_key, storage_value
-        FROM app_storage
+        FROM   app_storage
         ORDER BY updated_at DESC
       `;
       const out = Object.create(null);
@@ -115,7 +98,7 @@ module.exports = async function handler(req, res) {
 
     if (!key) return json(res, 400, { error: 'Key required: /api/storage/<key>' });
 
-    // ── GET /api/storage/<key> ───────────────────────────────────────────────
+    // GET /api/storage/<key>
     if (req.method === 'GET') {
       const rows = await sql`
         SELECT storage_value FROM app_storage WHERE storage_key = ${key}
@@ -123,14 +106,16 @@ module.exports = async function handler(req, res) {
       return json(res, 200, { value: rows[0] ? rows[0].storage_value : null });
     }
 
-    // ── PUT /api/storage/<key> ───────────────────────────────────────────────
+    // PUT /api/storage/<key>
     if (req.method === 'PUT') {
       let value;
       if (req.body && typeof req.body === 'object' && typeof req.body.value === 'string') {
         value = req.body.value;
       } else if (typeof req.body === 'string') {
-        try { const p = JSON.parse(req.body); value = typeof p.value === 'string' ? p.value : req.body; }
-        catch { value = req.body; }
+        try {
+          const p = JSON.parse(req.body);
+          value = typeof p.value === 'string' ? p.value : req.body;
+        } catch { value = req.body; }
       } else {
         return json(res, 400, { error: 'Body must be { "value": "..." }' });
       }
@@ -138,7 +123,7 @@ module.exports = async function handler(req, res) {
       const bytes = Buffer.byteLength(value, 'utf8');
       if (bytes > 8 * 1024 * 1024) {
         return json(res, 413, {
-          error: `Value too large (${(bytes/1024/1024).toFixed(2)} MB). Delete old records to free space.`
+          error: `Value too large (${(bytes / 1024 / 1024).toFixed(2)} MB). Delete old records to free space.`
         });
       }
 
@@ -152,7 +137,7 @@ module.exports = async function handler(req, res) {
       return res.status(204).end();
     }
 
-    // ── DELETE /api/storage/<key> ────────────────────────────────────────────
+    // DELETE /api/storage/<key>
     if (req.method === 'DELETE') {
       await sql`DELETE FROM app_storage WHERE storage_key = ${key}`;
       return res.status(204).end();
@@ -164,12 +149,12 @@ module.exports = async function handler(req, res) {
     console.error(`[storage] ${req.method} ${req.url}:`, err.message || err);
     const msg = err.message || String(err);
 
-    if (msg.includes('54000') || msg.includes('value too long')) {
+    if (msg.includes('54000') || msg.includes('value too long'))
       return json(res, 413, { error: 'Value too large for the database column.' });
-    }
-    if (msg.includes('ECONNREFUSED') || msg.includes('ETIMEDOUT') || msg.includes('connect ETIMEOUT')) {
+
+    if (msg.includes('ECONNREFUSED') || msg.includes('ETIMEDOUT') || msg.includes('ETIMEOUT')) {
       _sql = null;
-      return json(res, 503, { error: 'Database connection failed. Please try again in a moment.' });
+      return json(res, 503, { error: 'Database connection failed. Try again in a moment.' });
     }
     if (msg.includes('password authentication') || msg.includes('authentication failed')) {
       _sql = null;
