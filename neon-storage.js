@@ -29,6 +29,7 @@
     var xhr = new XMLHttpRequest();
     xhr.open('GET', API, false); // false = synchronous
     xhr.timeout = 8000;
+    xhr.overrideMimeType('text/plain; charset=x-user-defined'); // handle gzip correctly
     xhr.send();
     if (xhr.status >= 200 && xhr.status < 300) {
       var parsed = JSON.parse(xhr.responseText);
