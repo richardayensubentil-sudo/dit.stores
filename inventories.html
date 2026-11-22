@@ -11660,20 +11660,28 @@ body::after {
               sortOffices();
               const doSave = function() {
                 try {
+                  // Hard guard: never overwrite Neon items with empty array if Neon has data
+                  if (!state.data.items || state.data.items.length === 0) {
+                    const existing = memoryStore.getItem(STORAGE_KEY);
+                    if (existing) {
+                      try {
+                        const ex = JSON.parse(existing);
+                        if (ex && ex.data && Array.isArray(ex.data.items) && ex.data.items.length > 0) {
+                          console.warn('[inventory] saveState blocked — would overwrite ' + ex.data.items.length + ' items with empty array');
+                          return;
+                        }
+                      } catch(ge) {}
+                    }
+                  }
                   // Sync departments: merge state depts with shared key so neither side loses data.
-                  // Both loadState and saveState now use the same union logic → no silent data loss.
                   var sharedDepts = getSharedDepartments();
                   if (sharedDepts && sharedDepts.length > 0) {
-                    // Union: keep everything in state.departments PLUS everything in the shared list.
-                    // This means depts added in this session survive even if the shared key lags behind.
                     var merged = Array.from(new Set((state.departments || []).concat(sharedDepts)));
                     state.departments = merged;
-                    // Write the merged list back to the shared key to keep index.html in sync.
                     try { memoryStore.setItem('dit_departments_v1', JSON.stringify(merged)); } catch(e) {}
                   }
                   const payload = JSON.stringify(state);
                   memoryStore.setItem(STORAGE_KEY, payload);
-                  // Audit separately — don't block the save
                   try { auditInventoryChanges(); } catch(ae) {}
                 } catch (e) {
                   console.error('saveState failed:', e);

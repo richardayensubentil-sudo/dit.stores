@@ -6526,13 +6526,21 @@
           if (s) {
             var d = JSON.parse(s);
             if (typeof d !== "object" || d === null) throw new Error("Invalid");
-            personnelData = Array.isArray(d.records) ? d.records : [];
+            var loadedRecords = Array.isArray(d.records) ? d.records : [];
+            // Safety guard: if Neon returned 0 records but we already have
+            // records in memory (e.g. from a previous load this session),
+            // do NOT overwrite with the empty set
+            if (loadedRecords.length === 0 && personnelData && personnelData.length > 0) {
+              console.warn('[clothing] loadData: Neon returned 0 records but memory has ' + personnelData.length + ' — keeping memory data');
+              return;
+            }
+            personnelData = loadedRecords;
             nextOfficerSvcNo = parseInt(d.nextOfficer) || 1;
             nextSoldierSvcNo = parseInt(d.nextSoldier) || 1;
           } else {
             personnelData = [];
-              recalculateCounters();
-              /* do NOT saveData() on empty init — prevents wiping Neon data */
+            recalculateCounters();
+            /* do NOT saveData() on empty init — prevents wiping Neon data */
           }
         } catch (e) {
           personnelData = [];
@@ -6565,15 +6573,17 @@
         if (migrated) saveData();
       }
       function saveData() {
-        // Guard: never overwrite Neon with an empty array.
-        // If we have no data AND Neon has records (cache non-empty), something went wrong — abort.
-        if ((!personnelData || personnelData.length === 0) &&
-            memoryStore.getItem(DB_KEY) !== null) {
-          var existing = null;
-          try { existing = JSON.parse(memoryStore.getItem(DB_KEY)); } catch(e) {}
-          if (existing && Array.isArray(existing.records) && existing.records.length > 0) {
-            console.warn('[clothing] saveData() blocked — would overwrite', existing.records.length, 'records with empty array');
-            return;
+        // Hard guard: never overwrite Neon with empty records if Neon currently has data
+        if (!personnelData || personnelData.length === 0) {
+          var existing = memoryStore.getItem(DB_KEY);
+          if (existing) {
+            try {
+              var ex = JSON.parse(existing);
+              if (ex && Array.isArray(ex.records) && ex.records.length > 0) {
+                console.warn('[clothing] saveData() blocked — would overwrite ' + ex.records.length + ' records with empty array');
+                return;
+              }
+            } catch(e) {}
           }
         }
         syncIssueRecordsFromPersonnel();
