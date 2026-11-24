@@ -2,10 +2,12 @@
  * neon-storage.js — Client-side storage layer
  *
  * 1. Synchronous XHR bulk load — data in cache before any page script runs
+ *    NOTE: timeout cannot be set on sync XHR (browser blocks it) — omitted
  * 2. Async writes with AbortController timeout (10s) — no silent hangs
  * 3. 3-attempt exponential back-off on 5xx errors
  * 4. ready() promise — pages can await data availability
  * 5. NEVER overwrites Neon with empty data on init
+ * 6. visibilitychange event fires 'neon-flush' so modules can save pending state
  */
 (function () {
   var API = '/api/storage';
@@ -22,14 +24,14 @@
   }
 
   // ── 1. Synchronous bulk load ───────────────────────────────────────────────
-  // Intentional blocking XHR: guarantees data is in cache before any module
-  // script runs, preventing the race where pages save empty arrays to Neon.
+  // Blocks the main thread briefly to guarantee data is available before any
+  // module script runs — prevents race where pages save empty arrays to Neon.
+  // IMPORTANT: do NOT set .timeout on sync XHR — browsers throw an error.
   var syncLoaded = false;
   try {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', API, false); // false = synchronous
-    xhr.timeout = 8000;
-    xhr.overrideMimeType('text/plain; charset=x-user-defined'); // handle gzip correctly
+    // No xhr.timeout here — not allowed on synchronous requests
     xhr.send();
     if (xhr.status >= 200 && xhr.status < 300) {
       var parsed = JSON.parse(xhr.responseText);
@@ -49,7 +51,7 @@
   } else {
     // Async fallback for network blips / cold starts
     var fallback = new XMLHttpRequest();
-    fallback.open('GET', API, true);
+    fallback.open('GET', API, true); // true = async, timeout IS allowed
     fallback.timeout = 15000;
     fallback.onload = function () {
       if (fallback.status >= 200 && fallback.status < 300) {
@@ -65,12 +67,12 @@
     fallback.send();
   }
 
-  // ── 2. Async write with timeout + retry ───────────────────────────────────
+  // ── 2. Async write with AbortController timeout + retry ───────────────────
   function fetchWithTimeout(url, opts, ms) {
     var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = null;
     if (controller) {
-      opts.signal = controller.signal;
+      opts = Object.assign({}, opts, { signal: controller.signal });
       timer = setTimeout(function () { controller.abort(); }, ms);
     }
     return fetch(url, opts).then(function (r) {
@@ -94,7 +96,7 @@
 
     function run() {
       attempt++;
-      var go = function () {
+      var doFetch = function () {
         return fetchWithTimeout(url, opts, WRITE_TIMEOUT_MS).then(function (r) {
           if (!r.ok && r.status !== 204) {
             if (r.status >= 500 && attempt < 3) {
@@ -110,9 +112,9 @@
           }
         });
       };
-      return attempt === 1 ? go() : new Promise(function (res) {
+      return attempt === 1 ? doFetch() : new Promise(function (res) {
         setTimeout(res, delays[attempt - 1] || 2000);
-      }).then(go);
+      }).then(doFetch);
     }
 
     return run().catch(function (err) {
@@ -167,21 +169,11 @@
     get _cache()   { return cache;  }
   };
 
-  // Flush any pending writes when the user navigates away or closes the tab
-  // This ensures debounced saves are not lost on fast navigation
-  if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', function() {
-      // The browser gives ~100ms on beforeunload — sync XHR is the only reliable flush
-      // We only need to flush if there are pending writes (neonStorage writes are async)
-      // The in-memory cache is always current, so a sync flush of the cache is safe
-      // Note: modern browsers block sync XHR in beforeunload, so this is best-effort
-    });
-
-    // pagehide fires reliably on mobile and when tab is hidden — use it to trigger saves
-    document.addEventListener('visibilitychange', function() {
+  // Fire 'neon-flush' event when page is hidden so modules can flush pending saves
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden') {
-        // Notify all pending modules to flush — dispatches a custom event pages can listen to
-        try { window.dispatchEvent(new CustomEvent('neon-flush')); } catch(e) {}
+        try { window.dispatchEvent(new CustomEvent('neon-flush')); } catch (e) {}
       }
     });
   }
