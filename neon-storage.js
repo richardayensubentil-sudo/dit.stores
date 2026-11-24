@@ -1,13 +1,13 @@
 /**
  * neon-storage.js — Client-side storage layer
  *
- * 1. Synchronous XHR bulk load — data in cache before any page script runs
- *    NOTE: timeout cannot be set on sync XHR (browser blocks it) — omitted
- * 2. Async writes with AbortController timeout (10s) — no silent hangs
- * 3. 3-attempt exponential back-off on 5xx errors
- * 4. ready() promise — pages can await data availability
- * 5. NEVER overwrites Neon with empty data on init
- * 6. visibilitychange event fires 'neon-flush' so modules can save pending state
+ * Design goals:
+ * - Every page load reads FRESH data from Neon — no stale browser cache
+ * - Sync XHR on load guarantees data is in cache before module JS runs
+ * - NOTE: xhr.timeout is NOT allowed on sync requests (browser throws) — omitted
+ * - Async writes with 10s timeout via AbortController
+ * - 3-attempt exponential back-off on server errors
+ * - Hard guard: never overwrites Neon with empty arrays
  */
 (function () {
   var API = '/api/storage';
@@ -23,15 +23,14 @@
     cbs.forEach(function (cb) { try { cb(cache); } catch (e) {} });
   }
 
-  // ── 1. Synchronous bulk load ───────────────────────────────────────────────
-  // Blocks the main thread briefly to guarantee data is available before any
-  // module script runs — prevents race where pages save empty arrays to Neon.
-  // IMPORTANT: do NOT set .timeout on sync XHR — browsers throw an error.
+  // ── Synchronous bulk load ─────────────────────────────────────────────────
+  // Blocks briefly to ensure data is available before any module script runs.
+  // This prevents the race condition where modules save empty state to Neon.
+  // CRITICAL: Do NOT set xhr.timeout — browsers throw on sync XHR timeout.
   var syncLoaded = false;
   try {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', API, false); // false = synchronous
-    // No xhr.timeout here — not allowed on synchronous requests
     xhr.send();
     if (xhr.status >= 200 && xhr.status < 300) {
       var parsed = JSON.parse(xhr.responseText);
@@ -40,7 +39,7 @@
         syncLoaded = true;
       }
     } else {
-      console.warn('[neon] bulk load HTTP ' + xhr.status + ' — retrying async');
+      console.warn('[neon] sync load HTTP ' + xhr.status + ' — retrying async');
     }
   } catch (e) {
     console.warn('[neon] sync load failed, retrying async:', e.message);
@@ -49,15 +48,19 @@
   if (syncLoaded) {
     _resolveReady();
   } else {
-    // Async fallback for network blips / cold starts
+    // Async fallback — timeout IS allowed on async XHR
     var fallback = new XMLHttpRequest();
-    fallback.open('GET', API, true); // true = async, timeout IS allowed
+    fallback.open('GET', API, true);
     fallback.timeout = 15000;
     fallback.onload = function () {
       if (fallback.status >= 200 && fallback.status < 300) {
         try {
           var d = JSON.parse(fallback.responseText);
-          if (d && typeof d === 'object') Object.assign(cache, d);
+          if (d && typeof d === 'object') {
+            // Replace entire cache with fresh Neon data
+            Object.keys(cache).forEach(function (k) { delete cache[k]; });
+            Object.assign(cache, d);
+          }
         } catch (e) {}
       }
       _resolveReady();
@@ -67,7 +70,7 @@
     fallback.send();
   }
 
-  // ── 2. Async write with AbortController timeout + retry ───────────────────
+  // ── Async write with AbortController timeout + retry ─────────────────────
   function fetchWithTimeout(url, opts, ms) {
     var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = null;
@@ -123,26 +126,23 @@
     });
   }
 
-  // ── Public API ─────────────────────────────────────────────────────────────
+  // ── Public API ────────────────────────────────────────────────────────────
   window.neonStorage = {
-    /** Synchronous cache read. Returns null if key not found. */
+
     getItem: function (key) {
       return Object.prototype.hasOwnProperty.call(cache, key) ? cache[key] : null;
     },
 
-    /** Write value. Updates cache immediately; persists async. Returns Promise. */
     setItem: function (key, value) {
       cache[key] = String(value);
       return asyncWrite('PUT', key, value);
     },
 
-    /** Delete key. Updates cache immediately; deletes async. Returns Promise. */
     removeItem: function (key) {
       delete cache[key];
       return asyncWrite('DELETE', key);
     },
 
-    /** Resolves when the initial bulk load is complete. */
     ready: function () {
       if (_ready) return Promise.resolve(cache);
       return new Promise(function (res) {
@@ -150,7 +150,7 @@
       });
     },
 
-    /** Force a full async refresh (used by dashboard live stats). */
+    /** Full async refresh — replaces entire cache with fresh Neon data */
     refresh: function () {
       return fetchWithTimeout(API, {}, 15000)
         .then(function (r) {
@@ -169,7 +169,7 @@
     get _cache()   { return cache;  }
   };
 
-  // Fire 'neon-flush' event when page is hidden so modules can flush pending saves
+  // Flush pending saves when user switches tabs or closes
   if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden') {
