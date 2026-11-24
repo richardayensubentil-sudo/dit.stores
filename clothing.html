@@ -10605,6 +10605,33 @@
 
         document.querySelectorAll(".filter-select").forEach(updateFilterSelectStyle);
         refresh();
+
+        // Flush debounced saves when user switches tabs or navigates away
+        document.addEventListener('visibilitychange', function() {
+          if (document.visibilityState === 'hidden') {
+            // If there's pending clothing data, save it immediately
+            if (personnelData && personnelData.length > 0) {
+              try {
+                memoryStore.setItem(DB_KEY, JSON.stringify({
+                  records: personnelData,
+                  nextOfficer: nextOfficerSvcNo,
+                  nextSoldier: nextSoldierSvcNo
+                }));
+              } catch(e) {}
+            }
+          }
+        });
+        window.addEventListener('beforeunload', function() {
+          if (personnelData && personnelData.length > 0) {
+            try {
+              memoryStore.setItem(DB_KEY, JSON.stringify({
+                records: personnelData,
+                nextOfficer: nextOfficerSvcNo,
+                nextSoldier: nextSoldierSvcNo
+              }));
+            } catch(e) {}
+          }
+        });
       });
     </script>
     <script src="message-admin.js"></script>

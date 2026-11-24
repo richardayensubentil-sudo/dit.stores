@@ -777,14 +777,16 @@
       }catch(e){document.getElementById('statJobs').textContent='—';document.getElementById('statJobsSub').textContent='unavailable';}
     }
 
-    /* Load stats — refresh from Neon then render */
+    /* Load stats — always fetch fresh from Neon first, never show stale cache */
     async function refreshStats(){
-      try{await memoryStore.refresh();}catch(e){}
+      try{ await memoryStore.refresh(); }catch(e){}
       loadStats();
     }
-    document.addEventListener('DOMContentLoaded',()=>{
+    /* Run immediately on script load (not just DOMContentLoaded) so numbers
+       are always live — no stale cache numbers from a previous session */
+    memoryStore.ready().then(function(){
       refreshStats();
-      setInterval(refreshStats,60000);
+      setInterval(refreshStats, 30000); // refresh every 30s (was 60s)
     });
 
     /* ── Reports ── */

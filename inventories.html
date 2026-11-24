@@ -11612,6 +11612,30 @@ body::after {
               });
             });
 
+            // Flush debounced saves when user switches tabs or navigates away
+            // This prevents data loss when saveState(false) is pending and user leaves
+            document.addEventListener('visibilitychange', function() {
+              if (document.visibilityState === 'hidden' && _saveTimer) {
+                clearTimeout(_saveTimer);
+                _saveTimer = null;
+                // Fire the save immediately using a synchronous path
+                try {
+                  var payload = JSON.stringify(state);
+                  memoryStore.setItem(STORAGE_KEY, payload);
+                } catch(e) { console.warn('[inv] visibility flush failed:', e.message); }
+              }
+            });
+            window.addEventListener('beforeunload', function() {
+              if (_saveTimer) {
+                clearTimeout(_saveTimer);
+                _saveTimer = null;
+                try {
+                  var payload = JSON.stringify(state);
+                  memoryStore.setItem(STORAGE_KEY, payload);
+                } catch(e) {}
+              }
+            });
+
             var activitySnapshot = null;
             function recordInventoryActivity(action, detail, office, itemName) {
               try {

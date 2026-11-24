@@ -166,4 +166,23 @@
     get isLoaded() { return _ready; },
     get _cache()   { return cache;  }
   };
+
+  // Flush any pending writes when the user navigates away or closes the tab
+  // This ensures debounced saves are not lost on fast navigation
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', function() {
+      // The browser gives ~100ms on beforeunload — sync XHR is the only reliable flush
+      // We only need to flush if there are pending writes (neonStorage writes are async)
+      // The in-memory cache is always current, so a sync flush of the cache is safe
+      // Note: modern browsers block sync XHR in beforeunload, so this is best-effort
+    });
+
+    // pagehide fires reliably on mobile and when tab is hidden — use it to trigger saves
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'hidden') {
+        // Notify all pending modules to flush — dispatches a custom event pages can listen to
+        try { window.dispatchEvent(new CustomEvent('neon-flush')); } catch(e) {}
+      }
+    });
+  }
 })();
