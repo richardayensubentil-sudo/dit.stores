@@ -13137,8 +13137,47 @@ body::after {
 
             document.getElementById('catDeleteBtn').addEventListener('click', () => { const ci = state.data.items.filter(i => i.category === activeCatTarget); if (ci.length > 0) { showToast('Cannot delete "' + activeCatTarget + '" — has ' + ci.length + ' item(s).', 'error'); return; } confirmUser('Delete category "' + activeCatTarget + '"?', () => { state.data.categories = state.data.categories.filter(c => c.name !== activeCatTarget); if (state.activeCategory === activeCatTarget) state.activeCategory = null; saveState(false); refreshAll(); }); });
             document.getElementById('officeEditBtn').addEventListener('click', () => { _officeModalMode = 'edit'; _officeModalEditTarget = activeOfficeTarget; document.getElementById('newOfficeModalTitleText').textContent = 'Rename Office'; document.getElementById('newOfficeNameInput').value = activeOfficeTarget; openModal('newOfficeModal'); setTimeout(() => { const inp = document.getElementById('newOfficeNameInput'); inp.focus(); inp.select(); }, 200); });
-            document.getElementById('officeDeleteBtn').addEventListener('click', () => { const office = state.data.offices.find(o => o.name === activeOfficeTarget); if (office && office.isDefault) return showToast("Cannot delete default Stores.", "error"); confirmUser('Delete office "' + activeOfficeTarget + '"?', () => { const deletedOfficeDept = (state.data.offices.find(o => o.name === activeOfficeTarget) || {}).dept || state.activeDept; state.data.offices = state.data.offices.filter(o => o.name !== activeOfficeTarget); state.data.items = state.data.items.filter(i => i.office !== activeOfficeTarget || i.department !== deletedOfficeDept); pruneEmptyCategories(deletedOfficeDept); clearColScopeForOffice(deletedOfficeDept, activeOfficeTarget); if (state.activeOffice === activeOfficeTarget) state.activeOffice = null; saveState(false); refreshAll(); }); });
-            document.getElementById('officeDeleteItemsBtn').addEventListener('click', () => { const officeName = activeOfficeTarget; const selectedInOffice = state.data.items.filter(i => _selectedItemIds.has(i.id) && i.department === state.activeDept && i.office === officeName); const allInOffice = state.data.items.filter(i => i.department === state.activeDept && i.office === officeName); const itemsToDelete = selectedInOffice.length > 0 ? selectedInOffice : allInOffice; document.getElementById('officeActionMenu').classList.remove('show'); if (itemsToDelete.length === 0) return showToast('No items in this office to delete.', 'error'); const scopeLabel = selectedInOffice.length > 0 ? selectedInOffice.length + ' selected item(s)' : 'all ' + allInOffice.length + ' item(s)'; confirmUser('Delete ' + scopeLabel + ' in "' + officeName + '"?', () => { const idsToRemove = new Set(itemsToDelete.map(i => i.id)); state.data.items = state.data.items.filter(i => !idsToRemove.has(i.id)); idsToRemove.forEach(id => _selectedItemIds.delete(id)); updateSelectAllCheckbox(); pruneEmptyCategories(state.activeDept); saveState(false); refreshAll(); showToast(itemsToDelete.length + ' item(s) deleted from ' + officeName + '.'); }); });
+            document.getElementById('officeDeleteBtn').addEventListener('click', () => {
+                const office = state.data.offices.find(o => o.name === activeOfficeTarget && o.dept === state.activeDept);
+                if (office && office.isDefault) return showToast('Cannot delete the default Stores office. Delete all items in it first, or rename it.', 'error');
+                if (!office) return showToast('Office not found.', 'error');
+                const itemCount = state.data.items.filter(i => i.office === activeOfficeTarget && i.department === state.activeDept).length;
+                const msg = itemCount > 0
+                    ? 'Delete office "' + activeOfficeTarget + '" and its ' + itemCount + ' item(s)? This cannot be undone.'
+                    : 'Delete office "' + activeOfficeTarget + '"? This cannot be undone.';
+                confirmUser(msg, () => {
+                    const deptOfOffice = office.dept || state.activeDept;
+                    // Remove only THIS dept's office — not same-named offices in other depts
+                    state.data.offices = state.data.offices.filter(o => !(o.name === activeOfficeTarget && o.dept === deptOfOffice));
+                    // Remove items only in THIS dept's office
+                    state.data.items = state.data.items.filter(i => !(i.office === activeOfficeTarget && i.department === deptOfOffice));
+                    pruneEmptyCategories(deptOfOffice);
+                    clearColScopeForOffice(deptOfOffice, activeOfficeTarget);
+                    if (state.activeOffice === activeOfficeTarget) state.activeOffice = null;
+                    saveState(true); // immediate — don't debounce a delete
+                    refreshAll();
+                    showToast('Office "' + activeOfficeTarget + '" deleted.');
+                });
+            });
+            document.getElementById('officeDeleteItemsBtn').addEventListener('click', () => {
+                const officeName = activeOfficeTarget;
+                document.getElementById('officeActionMenu').classList.remove('show');
+                const selectedInOffice = state.data.items.filter(i => _selectedItemIds.has(i.id) && i.department === state.activeDept && i.office === officeName);
+                const allInOffice     = state.data.items.filter(i => i.department === state.activeDept && i.office === officeName);
+                const itemsToDelete   = selectedInOffice.length > 0 ? selectedInOffice : allInOffice;
+                if (itemsToDelete.length === 0) return showToast('No items in this office to delete.', 'error');
+                const scopeLabel = selectedInOffice.length > 0 ? selectedInOffice.length + ' selected item(s)' : 'all ' + allInOffice.length + ' item(s)';
+                confirmUser('Delete ' + scopeLabel + ' in "' + officeName + '"? This cannot be undone.', () => {
+                    const idsToRemove = new Set(itemsToDelete.map(i => i.id));
+                    state.data.items = state.data.items.filter(i => !idsToRemove.has(i.id));
+                    idsToRemove.forEach(id => _selectedItemIds.delete(id));
+                    updateSelectAllCheckbox();
+                    pruneEmptyCategories(state.activeDept);
+                    saveState(true); // immediate save after delete
+                    refreshAll();
+                    showToast(itemsToDelete.length + ' item(s) deleted from "' + officeName + '".');
+                });
+            });
 
             window.currentReturnItemId = null; window.currentTransferItemId = null; window.currentDeleteItemId = null;
             function ensureCategoryExists(categoryName, dept) { if (!categoryName || !dept) return; if (!state.data.categories.find(c => c.name === categoryName && c.dept === dept)) { state.data.categories.push({ name: categoryName, id: 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4), dept: dept }); } }
